@@ -1,6 +1,7 @@
 import { data as downforceData } from './commands/tune-downforce/index.js';
 import dotenv from 'dotenv';
 import process from 'node:process';
+import { data as tuneDownforceData } from './tune-downforce.js';
 
 /**
  * This file is meant to be run from the command line, and is not used by the
@@ -37,7 +38,7 @@ const response = await fetch(url, {
     Authorization: `Bot ${token}`,
   },
   method: 'PUT',
-  body: JSON.stringify([AWW_COMMAND, INVITE_COMMAND]),
+  body: JSON.stringify([tuneDownforceData]),
 });
 
 if (response.ok) {

@@ -11,7 +11,7 @@ import {
 import { AWW_COMMAND, INVITE_COMMAND } from './commands.js';
 import { getCuteUrl } from './reddit.js';
 import { InteractionResponseFlags } from 'discord-interactions';
-import { execute as downforceExecute } from './commands/tune-downforce/index.js';
+import { execute as tuneDownforceExecute } from './tune-downforce.js';
 
 class JsonResponse extends Response {
   constructor(body, init) {
@@ -56,33 +56,9 @@ router.post('/', async (request, env) => {
     });
   }
 
-  if (interaction.type === InteractionType.APPLICATION_COMMAND) {
-    // Most user commands will come as `APPLICATION_COMMAND`.
-    switch (interaction.data.name.toLowerCase()) {
-      case AWW_COMMAND.name.toLowerCase(): {
-        const cuteUrl = await getCuteUrl();
-        return new JsonResponse({
-          type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
-          data: {
-            content: cuteUrl,
-          },
-        });
-      }
-      case INVITE_COMMAND.name.toLowerCase(): {
-        const applicationId = env.DISCORD_APPLICATION_ID;
-        const INVITE_URL = `https://discord.com/oauth2/authorize?client_id=${applicationId}&scope=applications.commands`;
-        return new JsonResponse({
-          type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
-          data: {
-            content: INVITE_URL,
-            flags: InteractionResponseFlags.EPHEMERAL,
-          },
-        });
-      }
-      default:
-        return new JsonResponse({ error: 'Unknown Type' }, { status: 400 });
-    }
-  }
+if (interaction.data.name.toLowerCase() === 'tune-downforce') {
+  return new JsonResponse(await tuneDownforceExecute(interaction));
+}
 
   console.error('Unknown Type');
   return new JsonResponse({ error: 'Unknown Type' }, { status: 400 });
