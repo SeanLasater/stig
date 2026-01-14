@@ -3,9 +3,9 @@
  * and registration.
  */
 
-export const AWW_COMMAND = {
-  name: 'awwww',
-  description: 'Drop some cuteness on this channel.',
+export const TUNE_DOWNFORCE = {
+  name: 'Tune Downforce',
+  description: 'Tune for optimal. [Weight, Balance. Tire]',
 };
 
 export const INVITE_COMMAND = {

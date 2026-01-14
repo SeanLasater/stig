@@ -1,4 +1,4 @@
-import { AWW_COMMAND, INVITE_COMMAND } from './commands.js';
+import { data as downforceData } from './commands/tune-downforce/index.js';
 import dotenv from 'dotenv';
 import process from 'node:process';
 
@@ -10,6 +10,9 @@ import process from 'node:process';
 
 dotenv.config({ path: '.dev.vars' });
 
+const commands = [
+  downforceData
+];
 const token = process.env.DISCORD_TOKEN;
 const applicationId = process.env.DISCORD_APPLICATION_ID;
 

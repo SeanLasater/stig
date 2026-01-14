@@ -11,6 +11,7 @@ import {
 import { AWW_COMMAND, INVITE_COMMAND } from './commands.js';
 import { getCuteUrl } from './reddit.js';
 import { InteractionResponseFlags } from 'discord-interactions';
+import { execute as downforceExecute } from './commands/tune-downforce/index.js';
 
 class JsonResponse extends Response {
   constructor(body, init) {
