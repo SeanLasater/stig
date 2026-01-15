@@ -1,6 +1,4 @@
-// ──────────────────────────────────────────────────────────────
-// Downforce & Grip Tuning Data + Calculation Logic
-// ──────────────────────────────────────────────────────────────
+// All static data, constants and core calculation logic
 
 export const gripDict = {
   ch: 0.82, cm: 0.90, cs: 0.99,
@@ -14,26 +12,16 @@ export const tireNames = {
   RH: 'Racing Hard', RM: 'Racing Medium', RS: 'Racing Soft',
 };
 
-// Constants used in calculations
+// Tuning constants
 export const DF_PER_LB = 0.11;
 export const BASE_NF_MULTIPLIER = 2.0;
 export const FRONT_NF_ADJUST = 1.06;
-export const REAR_NF_ADJUST  = 0.94;
+export const REAR_NF_ADJUST = 0.94;
 export const NF_MIN = 1.40;
 export const NF_MAX = 3.30;
 export const DF_MIN = 0;
 export const DF_MAX = 300;
 
-// ──────────────────────────────────────────────────────────────
-// Core Calculation
-// ──────────────────────────────────────────────────────────────
-
-/**
- * @param {number} weightLbs - Car weight in pounds
- * @param {number} frontPercent - Front weight distribution % (30–70)
- * @param {string} tire - Tire code (ch, cm, cs, sh, etc.)
- * @returns {{ frontDF: string, rearDF: string, frontNF: string, rearNF: string, grip: string, tireDisplay: string } | { error: string }}
- */
 export function calculateGripTune(weightLbs, frontPercent, tire) {
   const tireKey = tire.toLowerCase();
   const grip = gripDict[tireKey] ?? 1.0;
@@ -48,21 +36,19 @@ export function calculateGripTune(weightLbs, frontPercent, tire) {
   const frontWeight = weightLbs * frontRatio;
   const rearWeight = weightLbs * rearRatio;
 
-  // Natural Frequency
   const baseNF = grip * BASE_NF_MULTIPLIER;
   const frontNF = Math.max(NF_MIN, Math.min(NF_MAX, baseNF * FRONT_NF_ADJUST));
-  const rearNF  = Math.max(NF_MIN, Math.min(NF_MAX, baseNF * REAR_NF_ADJUST));
+  const rearNF = Math.max(NF_MIN, Math.min(NF_MAX, baseNF * REAR_NF_ADJUST));
 
-  // Downforce
   const frontDF = Math.max(DF_MIN, Math.min(DF_MAX, frontWeight * grip * DF_PER_LB));
-  const rearDF  = Math.max(DF_MIN, Math.min(DF_MAX, rearWeight  * grip * DF_PER_LB));
+  const rearDF = Math.max(DF_MIN, Math.min(DF_MAX, rearWeight * grip * DF_PER_LB));
 
   return {
     frontDF: frontDF.toFixed(1),
-    rearDF:  rearDF.toFixed(1),
+    rearDF: rearDF.toFixed(1),
     frontNF: frontNF.toFixed(2),
-    rearNF:  rearNF.toFixed(2),
-    grip:    grip.toFixed(2),
+    rearNF: rearNF.toFixed(2),
+    grip: grip.toFixed(2),
     tireDisplay: tireNames[tire.toUpperCase()] || tire.toUpperCase(),
   };
 }

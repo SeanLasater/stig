@@ -1,9 +1,6 @@
-import {
-  calculateGripTune,
-  tireNames,   // only needed if you want fallback display
-} from './data.js';
+import { calculateGripTune } from './data.js';
 
-// Command metadata (for registration)
+// Command metadata for registration (Discord expects this exact shape)
 export const data = {
   name: 'tune-downforce',
   description: 'GT7 grip-optimized downforce & natural frequency',
@@ -11,7 +8,7 @@ export const data = {
     {
       name: 'weight',
       description: 'Car weight in pounds (lbs)',
-      type: 10,          // 10 = NUMBER
+      type: 10,  // NUMBER
       required: true,
       min_value: 1000,
       max_value: 5000,
@@ -19,7 +16,7 @@ export const data = {
     {
       name: 'front',
       description: 'Front weight distribution % (e.g. 54)',
-      type: 10,          // NUMBER
+      type: 10,  // NUMBER
       required: true,
       min_value: 30,
       max_value: 70,
@@ -27,7 +24,7 @@ export const data = {
     {
       name: 'tire',
       description: 'Tire compound',
-      type: 3,           // 3 = STRING
+      type: 3,   // STRING
       required: true,
       choices: [
         { name: 'Comfort Hard',   value: 'ch' },
@@ -44,25 +41,15 @@ export const data = {
   ],
 };
 
-/**
- * @param {object} interaction - Raw Discord interaction payload
- * @returns {object} Response payload for Discord
- */
+// Handler: receives raw interaction, returns response object
 export async function execute(interaction) {
-  // Because this does simple math → no need to defer,
-  // but you can add deferReply logic if you later expand it
-  // await interaction.deferReply(); // optional
+  const opts = interaction.data.options || [];
+  const weight = opts.find(o => o.name === 'weight')?.value;
+  const front = opts.find(o => o.name === 'front')?.value;
+  const tire = opts.find(o => o.name === 'tire')?.value;
 
-  const weight = interaction.data.options.find(o => o.name === 'weight')?.value;
-  const front  = interaction.data.options.find(o => o.name === 'front')?.value;
-  const tire   = interaction.data.options.find(o => o.name === 'tire')?.value;
-
-  // Basic validation (though Discord enforces min/max via command registration)
   if (typeof weight !== 'number' || typeof front !== 'number' || typeof tire !== 'string') {
-    return {
-      type: 4,
-      data: { content: 'Invalid input values.' },
-    };
+    return { type: 4, data: { content: 'Invalid input values.' } };
   }
 
   const result = calculateGripTune(weight, front, tire);
@@ -80,14 +67,13 @@ export async function execute(interaction) {
     };
   }
 
-  // Success embed (same look & feel as your original)
   const embed = {
     title: 'GT7 Grip-Optimized Tuning',
     color: 0xffd700, // gold
     fields: [
-      { name: 'Weight',      value: `${weight.toLocaleString()} lbs`, inline: false },
-      { name: 'Balance',     value: `${front}% Front │ ${100 - front}% Rear`, inline: false },
-      { name: 'Tire',        value: `${result.tireDisplay} (Grip: ${result.grip}g)`, inline: false },
+      { name: 'Weight', value: `${weight.toLocaleString()} lbs`, inline: false },
+      { name: 'Balance', value: `${front}% Front │ ${100 - front}% Rear`, inline: false },
+      { name: 'Tire', value: `${result.tireDisplay} (Grip: ${result.grip}g)`, inline: false },
       {
         name: '**FRONT**',
         value: `\`\`\`Downforce: ${result.frontDF.padStart(6)}\nNat Freq : ${result.frontNF} Hz\`\`\``,
@@ -104,7 +90,7 @@ export async function execute(interaction) {
   };
 
   return {
-    type: 4, // ChannelMessageWithSource
+    type: 4, // CHANNEL_MESSAGE_WITH_SOURCE
     data: { embeds: [embed] },
   };
 }
