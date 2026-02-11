@@ -8,7 +8,7 @@ import { execute as tuneDownforceExecute } from './commands/tune-downforce/index
 
 const commandHandlers = {
   'tune-downforce': tuneDownforceExecute,
-  // Add more: 'other-command': otherExecute,
+  //'tune-transmission': tuneTransmissionExecute,
 };
 
 export default {
@@ -39,7 +39,27 @@ export default {
     }
 
     if (interaction.type === 2) { // Application Command
-      const handler = commandHandlers[interaction.data.name.toLowerCase()];
+      const handler = commandHandlers[interaction.data.name];
+      if (handler) {
+        try {
+          const response = await handler(interaction);
+          return new Response(JSON.stringify(response), {
+            headers: { 'Content-Type': 'application/json' },
+          });
+        } catch (err) {
+          console.error('Command error:', err);
+          return new Response(JSON.stringify({
+            type: 4,
+            data: { content: 'Tuning failed – check inputs!' }
+          }), { headers: { 'Content-Type': 'application/json' } });
+        }
+      } else {
+        return new Response(JSON.stringify({
+          type: 4,
+          data: { content: `Unknown command: ${interaction.data.name}` }
+        }), { headers: { 'Content-Type': 'application/json' } });
+    }
+      /*const handler = commandHandlers[interaction.data.name.toLowerCase()];
       if (handler) {
         try {
           const response = await handler(interaction);
@@ -50,7 +70,7 @@ export default {
         }
       }
       return JsonResponse({ type: 4, data: { content: 'Unknown command' } });
-    }
+    }*/
 
     return new Response('Not handled', { status: 400 });
   },

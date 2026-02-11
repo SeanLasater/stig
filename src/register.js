@@ -1,13 +1,9 @@
-// register.js...
-// Dynamic import of all command data.
+//old_commands.js
+// import { TUNEDOWNFORCE_COMMAND, TUNETRANS_COMMAND } from './commands';
 
-import { TUNEDOWNFORCE_COMMAND, TUNETRANS_COMMAND } from './commands';
+import {data as tuneDownforceData } from './commands/tune-downforce/index.js'
 import dotenv from 'dotenv';
 import process from 'node:process';
-
-//NEW FILE STRUCTURE IMPORTS
-import {data as downforceData } from './commands/tune-downforce/index.js';
-//import {data as transData } from './commands/tune-transmission/index.js';
 
 /**
  * This file is meant to be run from the command line, and is not used by the
@@ -17,9 +13,16 @@ import {data as downforceData } from './commands/tune-downforce/index.js';
 
 dotenv.config({ path: '.dev.vars' });
 
+const commands = [
+  tuneDownforceData,
+  // tuneTransData,
+]
+
+// LOAD TOKEN AND ID
 const token = process.env.DISCORD_TOKEN;
 const applicationId = process.env.DISCORD_APPLICATION_ID;
 
+//IF TOKEN FAILS, THROW WARNING
 if (!token) {
   throw new Error('The DISCORD_TOKEN environment variable is required.');
 }
