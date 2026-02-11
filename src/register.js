@@ -8,7 +8,7 @@ const commands = [
 
 const DISCORD_TOKEN = process.env.DISCORD_TOKEN;
 const DISCORD_APPLICATION_ID = process.env.DISCORD_APPLICATION_ID;
-const GUILD_ID = process.env.DISCORD_TEST_GUILD_ID; // optional for faster testing
+const GUILD_ID = process.env.GUILD_ID; // optional for faster testing
 
 const url = GUILD_ID
   ? `https://discord.com/api/v10/applications/${DISCORD_APPLICATION_ID}/guilds/${GUILD_ID}/commands`
