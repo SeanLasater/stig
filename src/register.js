@@ -1,52 +1,56 @@
-import { data as tuneDownforceData } from './commands/tune-downforce/index.js';
+import { TUNEDOWNFORCE_COMMAND, TUNETRANS_COMMAND } from './commands.js';
+import dotenv from 'dotenv';
+import process from 'node:process';
 
-const commands = [
-  tuneDownforceData,
-  // more commands later
-];
+/**
+ * This file is meant to be run from the command line, and is not used by the
+ * application server.  It's allowed to use node.js primitives, and only needs
+ * to be run once.
+ */
 
-const DISCORD_TOKEN = process.env.DISCORD_TOKEN;
-const APPLICATION_ID = process.env.DISCORD_APPLICATION_ID;
-const GUILD_ID = process.env.DISCORD_TEST_GUILD_ID; // optional
+dotenv.config({ path: '.dev.vars' });
 
-// Debug: show what we actually have
-console.log('Environment:');
-console.log('  Token:', DISCORD_TOKEN ? 'present (hidden)' : 'MISSING');
-console.log('  App ID:', APPLICATION_ID || 'MISSING');
-console.log('  Guild ID:', GUILD_ID || 'not set (using global scope)');
+const token = process.env.DISCORD_TOKEN;
+const applicationId = process.env.DISCORD_APPLICATION_ID;
 
-if (!DISCORD_TOKEN) {
-  throw new Error('DISCORD_TOKEN is not set');
+if (!token) {
+  throw new Error('The DISCORD_TOKEN environment variable is required.');
 }
-if (!APPLICATION_ID) {
-  throw new Error('DISCORD_APPLICATION_ID is not set');
+if (!applicationId) {
+  throw new Error(
+    'The DISCORD_APPLICATION_ID environment variable is required.',
+  );
 }
 
-const url = GUILD_ID
-  ? `https://discord.com/api/v10/applications/${APPLICATION_ID}/guilds/${GUILD_ID}/commands`
-  : `https://discord.com/api/v10/applications/${APPLICATION_ID}/commands`;
+/**
+ * Register all commands globally.  This can take o(minutes), so wait until
+ * you're sure these are the commands you want.
+ */
+const url = `https://discord.com/api/v10/applications/${applicationId}/commands`;
 
-console.log('Registering to:', url);
-
-fetch(url, {
-  method: 'PUT',
+const response = await fetch(url, {
   headers: {
     'Content-Type': 'application/json',
-    Authorization: `Bot ${DISCORD_TOKEN}`,
+    Authorization: `Bot ${token}`,
   },
-  body: JSON.stringify(commands),
-})
-  .then(async (res) => {
-    if (!res.ok) {
-      const errorBody = await res.text();
-      throw new Error(`Failed: ${res.status} ${res.statusText}\n${errorBody}`);
+  method: 'PUT',
+  body: JSON.stringify([TUNEDOWNFORCE_COMMAND, TUNETRANS_COMMAND]),
+});
+
+if (response.ok) {
+  console.log('Registered all commands');
+  const data = await response.json();
+  console.log(JSON.stringify(data, null, 2));
+} else {
+  console.error('Error registering commands');
+  let errorText = `Error registering commands \n ${response.url}: ${response.status} ${response.statusText}`;
+  try {
+    const error = await response.text();
+    if (error) {
+      errorText = `${errorText} \n\n ${error}`;
     }
-    return res.json();
-  })
-  .then((data) => {
-    console.log('Successfully registered commands:');
-    console.log(JSON.stringify(data, null, 2));
-  })
-  .catch((err) => {
-    console.error('Registration failed:', err.message);
-  });
+  } catch (err) {
+    console.error('Error reading body from request:', err);
+  }
+  console.error(errorText);
+}
