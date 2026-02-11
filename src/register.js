@@ -1,7 +1,7 @@
 //old_commands.js
 // import { TUNEDOWNFORCE_COMMAND, TUNETRANS_COMMAND } from './commands';
 
-import {data as tuneDownforceData } from './commands/tune-downforce/index.js'
+import { data as tuneDownforceData } from './commands/tune-downforce/index.js'
 import dotenv from 'dotenv';
 import process from 'node:process';
 

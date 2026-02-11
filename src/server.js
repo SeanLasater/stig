@@ -59,7 +59,9 @@ export default {
           data: { content: `Unknown command: ${interaction.data.name}` }
         }), { headers: { 'Content-Type': 'application/json' } });
     }
-      /*const handler = commandHandlers[interaction.data.name.toLowerCase()];
+  }
+      /* OLD HANDLER
+      const handler = commandHandlers[interaction.data.name.toLowerCase()];
       if (handler) {
         try {
           const response = await handler(interaction);
