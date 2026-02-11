@@ -1,7 +1,7 @@
 // register.js...
 // Dynamic import of all command data.
 
-import { TUNEDOWNFORCE_COMMAND, TUNETRANS_COMMAND } from './commands.js';
+import { TUNEDOWNFORCE_COMMAND, TUNETRANS_COMMAND } from './commands';
 import dotenv from 'dotenv';
 import process from 'node:process';
 
