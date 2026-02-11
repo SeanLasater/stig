@@ -1,56 +1,74 @@
-// MAYBE EXAMPLE?
 
-// src/server.js
-import { verifyKey } from 'discord-interactions';
-import { JsonResponse } from './utils.js'
-import { execute as tuneDownforceExecute } from './commands/tune-downforce/index.js';
+
+import { calculateDownforce } from "./logic.js";
 
 const commandHandlers = {
   'tune-downforce': tuneDownforceExecute,
   // Add more: 'other-command': otherExecute,
 };
 
-export default {
-  async fetch(request, env) {
-    if (request.method !== 'POST') {
-      return new Response('Method Not Allowed– only POST supported for Discord interactions', { status: 405, headers: { Allow: 'POST' } });
-    }
+export const data = {
+  name: 'tune-downforce',
+  description: 'Tune downforce based on weight, tire and balance',
+  options: [
+    {
+      name: 'tire',
+      description: 'Your tire compound.',
+      type: 3, // string
+      required: true,
+      choices: [
+        { name: 'ch', value: 'comfort-hard' },
+        { name: 'cm', value: 'comfort-medium' },
+        { name: 'cs', value: 'comfort-soft' },
+        { name: 'sh', value: 'sport-hard' },
+        { name: 'sm', value: 'sport-medium' },
+        { name: 'ss', value: 'sport-soft' },
+        { name: 'rh', value: 'racing-hard' },
+        { name: 'rm', value: 'racing-medium' },
+        { name: 'rs', value: 'racing-soft' },
+      ]
+    },
+    {
+      name: 'weight',
+      description: 'Your choice of tire compound.',
+      type: 4, // int
+      required: true,
+    },
+    {
+      name: 'balance',
+      description: 'Your vehicles weight balance.',
+      type: 4, // int
+      required: true,
+    },
+  ],
+}
 
-    const signature = request.headers.get('x-signature-ed25519');
-    const timestamp = request.headers.get('x-signature-timestamp');
-    const body = await request.text();
 
-    const isValid = verifyKey(
-      timestamp + body,
-      signature,
-      env.DISCORD_PUBLIC_KEY,
-      'hex'
-    );
+// PLACEHOLDER     !REPLACE!
+export async function execute(interaction) {
+  // Pull values from Discord command
+  const tire = interaction.data.options.find(o => o.name === 'tire-compound').value ?? 'comfort-hard'
+  const weight = interaction.data.options.find(o => o.name === 'vehicle_weight')?.value;
+  const balance = interaction.data.options.find(o => o.name === 'vehicle_balance')?.value;
 
-    if (!isValid) {
-      return new Response('Invalid signature', { status: 401 });
-    }
+  const result = calculateOptimalDownforce(tire, weight, balance);
 
-    const interaction = JSON.parse(body);
-
-    if (interaction.type === 1) { // Ping
-      return JsonResponse({ type: 1 });
-    }
-
-    if (interaction.type === 2) { // Application Command
-      const handler = commandHandlers[interaction.data.name.toLowerCase()];
-      if (handler) {
-        try {
-          const response = await handler(interaction);
-          return JsonResponse(response);
-        } catch (err) {
-          console.error(err);
-          return JsonResponse({ type: 4, data: { content: 'Error processing command' } });
-        }
-      }
-      return JsonResponse({ type: 4, data: { content: 'Unknown command' } });
-    }
-
-    return new Response('Not handled', { status: 400 });
-  },
-};
+  return {
+    type: 4, // ChannelMessageWithSource
+    data: {
+      embeds: [{
+        title: '✅ GT7 Downforce Tune',
+        description: `${tire} tire • ${weight} weight • ${balance} balance`,
+        fields: [
+          { name: 'Front Downforce', value: `${result.recommended.front} lbs`, inline: true },
+          { name: 'Rear Downforce', value: `${result.recommended.rear} lbs`, inline: true },
+          { name: 'Balance', value: result.recommended.balance, inline: true },
+          { name: 'Top Speed Loss', value: `-${result.topSpeedLoss} km/h`, inline: true },
+          { name: 'Cornering Gain', value: `+${result.corneringGainEstimate}%`, inline: true },
+        ],
+        color: 0x00ff00, // green
+        footer: { text: 'Adjust in-game sliders to match these values' },
+      }],
+    },
+  };
+}

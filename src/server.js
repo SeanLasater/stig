@@ -4,7 +4,7 @@
 
 import { verifyKey } from 'discord-interactions';
 import { JsonResponse } from './utils.js'
-import { execute as tuneDownforceExecute } from './tune-downforce';
+import { execute as tuneDownforceExecute } from './commands/tune-downforce/index.js';
 
 const commandHandlers = {
   'tune-downforce': tuneDownforceExecute,

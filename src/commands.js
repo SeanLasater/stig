@@ -9,6 +9,6 @@ export const TUNEDOWNFORCE_COMMAND = {
 };
 
 export const TUNETRANS_COMMAND = {
-  name: 'tune-downforce',
-  description: 'Tune downforce based on weight, tire and balance',
+  name: 'tune-transmission',
+  description: 'Tune transmission based on track specific ratios.',
 };

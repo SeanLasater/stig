@@ -5,6 +5,10 @@ import { TUNEDOWNFORCE_COMMAND, TUNETRANS_COMMAND } from './commands';
 import dotenv from 'dotenv';
 import process from 'node:process';
 
+//NEW FILE STRUCTURE IMPORTS
+import {data as downforceData } from './commands/tune-downforce/index.js';
+//import {data as transData } from './commands/tune-transmission/index.js';
+
 /**
  * This file is meant to be run from the command line, and is not used by the
  * application server.  It's allowed to use node.js primitives, and only needs
