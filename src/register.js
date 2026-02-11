@@ -7,7 +7,7 @@ const commands = [
 ];
 
 const DISCORD_TOKEN = process.env.DISCORD_TOKEN;
-const APPLICATION_ID = process.env.DISCORD_APPLICATION_ID;
+const DISCORD_APPLICATION_ID = process.env.DISCORD_APPLICATION_ID;
 const GUILD_ID = process.env.DISCORD_TEST_GUILD_ID; // optional for faster testing
 
 const url = GUILD_ID
