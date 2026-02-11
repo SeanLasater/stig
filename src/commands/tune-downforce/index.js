@@ -1,45 +1,56 @@
-// Example
-export const data = {
-  name: 'tune-downforce',
-  description: 'Adjust downforce settings for better cornering',
-  options: [
-    {
-      name: 'level',
-      description: 'Downforce level (1-10)',
-      type: 4,  // Integer
-      required: true,
-      min_value: 1,
-      max_value: 10,
-    },
-    {
-      name: 'mode',
-      description: 'Tuning mode',
-      type: 3,  // String
-      required: false,
-      choices: [
-        { name: 'Aggressive', value: 'aggro' },
-        { name: 'Balanced', value: 'balanced' },
-        { name: 'Safe', value: 'safe' },
-      ],
-    },
-  ],
+// MAYBE EXAMPLE?
+
+// src/server.js
+import { verifyKey } from 'discord-interactions';
+import { JsonResponse } from './utils.js'
+import { execute as tuneDownforceExecute } from './commands/tune-downforce/index.js';
+
+const commandHandlers = {
+  'tune-downforce': tuneDownforceExecute,
+  // Add more: 'other-command': otherExecute,
 };
 
-// Execution logic — this runs when user invokes /tune-downforce
-export async function execute(interaction) {
-  const level = interaction.data.options?.find(opt => opt.name === 'level')?.value;
-  const mode = interaction.data.options?.find(opt => opt.name === 'mode')?.value ?? 'balanced';
+export default {
+  async fetch(request, env) {
+    if (request.method !== 'POST') {
+      return new Response('Method Not Allowed– only POST supported for Discord interactions', { status: 405, headers: { Allow: 'POST' } });
+    }
 
-  // Your custom logic here (e.g., calculate something, call an API, etc.)
-  const result = `Downforce tuned to level ${level} in ${mode} mode!`;
-  // Could be complex: simulate lap time improvement, generate embed, etc.
+    const signature = request.headers.get('x-signature-ed25519');
+    const timestamp = request.headers.get('x-signature-timestamp');
+    const body = await request.text();
 
-  return {
-    type: 4,  // ChannelMessageWithSource
-    data: {
-      content: result,
-      // embeds: [{ title: 'Tuning Complete', description: ..., color: 0x00ff00 }],
-      // flags: 64, // ephemeral if you want private reply
-    },
-  };
-}
+    const isValid = verifyKey(
+      timestamp + body,
+      signature,
+      env.DISCORD_PUBLIC_KEY,
+      'hex'
+    );
+
+    if (!isValid) {
+      return new Response('Invalid signature', { status: 401 });
+    }
+
+    const interaction = JSON.parse(body);
+
+    if (interaction.type === 1) { // Ping
+      return JsonResponse({ type: 1 });
+    }
+
+    if (interaction.type === 2) { // Application Command
+      const handler = commandHandlers[interaction.data.name.toLowerCase()];
+      if (handler) {
+        try {
+          const response = await handler(interaction);
+          return JsonResponse(response);
+        } catch (err) {
+          console.error(err);
+          return JsonResponse({ type: 4, data: { content: 'Error processing command' } });
+        }
+      }
+      return JsonResponse({ type: 4, data: { content: 'Unknown command' } });
+    }
+
+    return new Response('Not handled', { status: 400 });
+  },
+};
