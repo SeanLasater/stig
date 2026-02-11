@@ -11,8 +11,8 @@ const APPLICATION_ID = process.env.DISCORD_APPLICATION_ID;
 const GUILD_ID = process.env.DISCORD_TEST_GUILD_ID; // optional for faster testing
 
 const url = GUILD_ID
-  ? `https://discord.com/api/v10/applications/${APPLICATION_ID}/guilds/${GUILD_ID}/commands`
-  : `https://discord.com/api/v10/applications/${APPLICATION_ID}/commands`;
+  ? `https://discord.com/api/v10/applications/${DISCORD_APPLICATION_ID}/guilds/${GUILD_ID}/commands`
+  : `https://discord.com/api/v10/applications/${DISCORD_APPLICATION_ID}/commands`;
 
 fetch(url, {
   method: 'PUT',
