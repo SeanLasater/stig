@@ -51,7 +51,7 @@ export async function execute(interaction) {
   const weight = interaction.data.options.find(o => o.name === 'vehicle_weight')?.value;
   const balance = interaction.data.options.find(o => o.name === 'vehicle_balance')?.value;
 
-  const result = calculateOptimalDownforce(tire, weight, balance);
+  const result = calculateDownforce(tire, weight, balance);
 
   return {
     type: 4, // ChannelMessageWithSource
