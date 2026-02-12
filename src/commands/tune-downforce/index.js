@@ -23,11 +23,49 @@ function createFollowUpBody(title, fields = [], color = 0xffd700, error = false)
   };
 }
 
-export async function handleTuneDownforce(interaction, env) {
-  // extract options, weight, front, tire ...
-  const result = calculateGripTune(weight, front, tire);
-  let responseBody = /* build embed as before */;
+// Your helpers (deferReply & createFollowUpBody) stay the same
 
+export async function handleTuneDownforce(interaction, env) {
+  // Extract options (this was missing in your new version!)
+  const { data } = interaction;
+  const options = Object.fromEntries(
+    (data.options ?? []).map(opt => [opt.name, opt.value])
+  );
+  const weight = options.weight;
+  const front  = options.front;
+  const tire   = options.tire;
+
+  // Run calculation
+  const result = calculateGripTune(weight, front, tire);
+
+  let responseBody;
+  if ('error' in result) {
+    responseBody = createFollowUpBody(
+      'Invalid Input',
+      [{ name: 'Error', value: result.error }],
+      0xff0000,
+      true
+    );
+  } else {
+    const balance = `${front}% Front │ ${100 - front}% Rear`;
+    responseBody = createFollowUpBody('GT7 Grip-Optimized Tuning', [
+      { name: 'Weight', value: `${weight.toLocaleString()} lbs`, inline: false },
+      { name: 'Balance', value: balance, inline: false },
+      { name: 'Tire', value: `${result.tireDisplay} (Grip: ${result.grip}g)`, inline: false },
+      {
+        name: '**FRONT**',
+        value: '```Downforce
+        inline: true,
+      },
+      {
+        name: '**REAR**',
+        value: '```Downforce: ' + result.rearDF.padStart(6) + '\nNat Freq : ' + result.rearNF + ' Hz```',
+        inline: true,
+      },
+    ]);
+  }
+
+  // Edit the original deferred message
   const applicationId = interaction.application_id;
   const token = interaction.token;
   const editUrl = `https://discord.com/api/v10/webhooks/${applicationId}/${token}/messages/@original`;
@@ -37,6 +75,8 @@ export async function handleTuneDownforce(interaction, env) {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(responseBody),
   });
+
+  // No return needed — this is background work
 }
 
 
