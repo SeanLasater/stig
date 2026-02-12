@@ -1,6 +1,9 @@
 // logic.js
 import { gripDict, tireNames } from './data.js';
 
+// NF = Natural Frequency
+// DF = Downforce
+
 /**
  * @typedef {{ frontDF: string, rearDF: string, frontNF: string, rearNF: string, grip: string, tireDisplay: string }} SuccessResult
  * @typedef {{ error: string }} ErrorResult
@@ -13,6 +16,7 @@ import { gripDict, tireNames } from './data.js';
  * @param {string} tire
  * @returns {TuneResult}
  */
+
 export function calculateGripTune(weightLbs, frontPercent, tire) {
   const tireKey = tire.toLowerCase();
   const grip = gripDict[tireKey] ?? 1.0;
@@ -44,3 +48,4 @@ export function calculateGripTune(weightLbs, frontPercent, tire) {
     tireDisplay: tireNames[tire.toUpperCase()] || tire.toUpperCase(),
   };
 }
+

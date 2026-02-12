@@ -79,10 +79,4 @@ export async function handleTuneDownforce(interaction, env) {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(responseBody),
   });
-
-  // We already returned the defer response
-  return deferResponse;
 }
-
-// If you're using a router (e.g. itty-router), you would map:
-// router.post('/', async (req, env) => { ... parse body → if name === 'tune-downforce' → handleTuneDownforce(body, env) })

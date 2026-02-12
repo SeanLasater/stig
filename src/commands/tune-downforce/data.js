@@ -18,7 +18,7 @@ export const command = {
     {
       name: 'weight',
       description: 'Car weight in pounds (lbs)',
-      type: 10, // number
+      type: 10, // num
       required: true,
       min_value: 1000,
       max_value: 5000,
@@ -26,7 +26,7 @@ export const command = {
     {
       name: 'front',
       description: 'Front weight distribution % (e.g. 54)',
-      type: 10, // number
+      type: 10, // num
       required: true,
       min_value: 30,
       max_value: 70,
