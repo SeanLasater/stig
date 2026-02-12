@@ -54,12 +54,12 @@ export async function handleTuneDownforce(interaction, env) {
       { name: 'Tire', value: `${result.tireDisplay} (Grip: ${result.grip}g)`, inline: false },
       {
         name: '**FRONT**',
-        value: '```Downforce
+        value: 'Downforce',
         inline: true,
       },
       {
-        name: '**REAR**',
-        value: '```Downforce: ' + result.rearDF.padStart(6) + '\nNat Freq : ' + result.rearNF + ' Hz```',
+        name: 'REAR',
+        value: 'Downforce: ' + result.rearDF.padStart(6) + '\nNat Freq : ' + result.rearNF + ' Hz',
         inline: true,
       },
     ]);
