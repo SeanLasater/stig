@@ -1,8 +1,8 @@
 import { verifyKey } from 'discord-interactions';
-import { handleTuneDownforce } from './commands/tune-downforce.js';  // adjust path
+import { handleTuneDownforce } from './commands/tune-downforce.js';
 
 export default {
-  async fetch(request, env) {
+  async fetch(request, env, ctx) {
     if (request.method !== 'POST') return new Response('Method Not Allowed', { status: 405 });
 
     const signature = request.headers.get('X-Signature-Ed25519');
@@ -28,7 +28,11 @@ export default {
     }
 
     if (body.type === 2 && body.data.name === 'tune-downforce') {
-      return handleTuneDownforce(body, env);
+        const defer = deferReply();
+        ctx.waituntil(
+            handleTuneDownforce(body, env).catch(console.error)
+        );
+        return defer;
     }
 
     return new Response('Unknown command', { status: 400 });

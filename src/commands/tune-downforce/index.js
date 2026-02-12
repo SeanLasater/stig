@@ -1,7 +1,6 @@
-// index.js  (or commands/tune-downforce.js)
 import { calculateGripTune } from './logic.js';
 
-// Helper to create deferred response (type 5)
+// Helper to create deferred response (type 5) for main calculation logic.
 function deferReply() {
   return new Response(
     JSON.stringify({ type: 5 }), // Defer Channel Message
@@ -9,7 +8,7 @@ function deferReply() {
   );
 }
 
-// Helper to create follow-up patch body (simple text + optional embed)
+// Create follow-up response (simple text + optional time embed)
 function createFollowUpBody(title, fields = [], color = 0xffd700, error = false) {
   const embed = {
     title,
@@ -25,6 +24,25 @@ function createFollowUpBody(title, fields = [], color = 0xffd700, error = false)
 }
 
 export async function handleTuneDownforce(interaction, env) {
+  // extract options, weight, front, tire ...
+  const result = calculateGripTune(weight, front, tire);
+  let responseBody = /* build embed as before */;
+
+  const applicationId = interaction.application_id;
+  const token = interaction.token;
+  const editUrl = `https://discord.com/api/v10/webhooks/${applicationId}/${token}/messages/@original`;
+
+  await fetch(editUrl, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(responseBody),
+  });
+}
+
+
+/*
+export async function handleTuneDownforce(interaction, env) {
+  // Extract options for weight, front, tire.
   const { data } = interaction;
   const options = Object.fromEntries(
     (data.options ?? []).map(opt => [opt.name, opt.value])
@@ -34,12 +52,11 @@ export async function handleTuneDownforce(interaction, env) {
   const front  = options.front;
   const tire   = options.tire;
 
-  // 1. Immediately defer
+  // Extract slash command args (weight, balance, tire)
   const deferResponse = deferReply();
-  
-  // Run calculation (can be async if needed later)
   const result = calculateGripTune(weight, front, tire);
 
+  // Tuning calculations. (Sync call)
   let responseBody;
 
   if ('error' in result) {
@@ -69,7 +86,7 @@ export async function handleTuneDownforce(interaction, env) {
     ]);
   }
 
-  // 2. Edit the deferred message via webhook
+  // 2. Build embed/message (Error or Tuning result)
   const token = interaction.token;
   const applicationId = interaction.application_id;
   const editUrl = `https://discord.com/api/v10/webhooks/${applicationId}/${token}/messages/@original`;
@@ -80,3 +97,5 @@ export async function handleTuneDownforce(interaction, env) {
     body: JSON.stringify(responseBody),
   });
 }
+
+*/
