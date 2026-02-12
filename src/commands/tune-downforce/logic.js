@@ -1,16 +1,18 @@
-// src/server.js
-// EXAMPLE
+// logic.js
+import { gripDict, tireNames } from './data.js';
 
-// Tuning constants
-export const DF_PER_LB = 0.11;
-export const BASE_NF_MULTIPLIER = 2.0;
-export const FRONT_NF_ADJUST = 1.06;
-export const REAR_NF_ADJUST = 0.94;
-export const NF_MIN = 1.40;
-export const NF_MAX = 3.30;
-export const DF_MIN = 0;
-export const DF_MAX = 300;
+/**
+ * @typedef {{ frontDF: string, rearDF: string, frontNF: string, rearNF: string, grip: string, tireDisplay: string }} SuccessResult
+ * @typedef {{ error: string }} ErrorResult
+ * @typedef {SuccessResult | ErrorResult} TuneResult
+ */
 
+/**
+ * @param {number} weightLbs
+ * @param {number} frontPercent
+ * @param {string} tire
+ * @returns {TuneResult}
+ */
 export function calculateGripTune(weightLbs, frontPercent, tire) {
   const tireKey = tire.toLowerCase();
   const grip = gripDict[tireKey] ?? 1.0;
@@ -25,33 +27,20 @@ export function calculateGripTune(weightLbs, frontPercent, tire) {
   const frontWeight = weightLbs * frontRatio;
   const rearWeight = weightLbs * rearRatio;
 
-  const baseNF = grip * BASE_NF_MULTIPLIER;
-  const frontNF = Math.max(NF_MIN, Math.min(NF_MAX, baseNF * FRONT_NF_ADJUST));
-  const rearNF = Math.max(NF_MIN, Math.min(NF_MAX, baseNF * REAR_NF_ADJUST));
+  const baseNF = grip * 2.0;
+  const frontNF = Math.max(1.40, Math.min(3.30, baseNF * 1.06));
+  const rearNF = Math.max(1.40, Math.min(3.30, baseNF * 0.94));
 
-  const frontDF = Math.max(DF_MIN, Math.min(DF_MAX, frontWeight * grip * DF_PER_LB));
-  const rearDF = Math.max(DF_MIN, Math.min(DF_MAX, rearWeight * grip * DF_PER_LB));
+  const dfPerLb = 0.11;
+  const frontDF = Math.max(0, Math.min(300, frontWeight * grip * dfPerLb));
+  const rearDF = Math.max(0, Math.min(300, rearWeight * grip * dfPerLb));
 
   return {
-    frontDF: frontDF.toFixed(1),
-    rearDF: rearDF.toFixed(1),
-    frontNF: frontNF.toFixed(2),
-    rearNF: rearNF.toFixed(2),
-    grip: grip.toFixed(2),
+    frontDF:  frontDF.toFixed(1),
+    rearDF:   rearDF.toFixed(1),
+    frontNF:  frontNF.toFixed(2),
+    rearNF:   rearNF.toFixed(2),
+    grip:     grip.toFixed(2),
     tireDisplay: tireNames[tire.toUpperCase()] || tire.toUpperCase(),
-  };
-}
-
-export function calculateDownforce(level, tireCompound = 'medium') {
-  const baseDownforce = level * 10;  // Simplified: e.g., level 1-10 → 10-100 units
-  const grip = tireGripData[tireCompound].lateralGrip;
-  const adjustedDownforce = baseDownforce * grip;
-  
-  // More complex logic: e.g., aero efficiency, drag penalty
-  const dragPenalty = level * 2;  // Higher downforce = more drag
-  return {
-    downforce: adjustedDownforce,
-    topSpeedLoss: dragPenalty,
-    corneringGain: grip * level,
   };
 }

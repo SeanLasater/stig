@@ -1,74 +1,88 @@
+// index.js  (or commands/tune-downforce.js)
+import { calculateGripTune } from './logic.js';
 
-
-import { calculateDownforce } from "./logic.js";
-
-const commandHandlers = {
-  'tune-downforce': tuneDownforceExecute,
-  // Add more: 'other-command': otherExecute,
-};
-
-export const data = {
-  name: 'tune-downforce',
-  description: 'Tune downforce based on weight, tire and balance',
-  options: [
-    {
-      name: 'tire',
-      description: 'Your tire compound.',
-      type: 3, // string
-      required: true,
-      choices: [
-        { name: 'ch', value: 'comfort-hard' },
-        { name: 'cm', value: 'comfort-medium' },
-        { name: 'cs', value: 'comfort-soft' },
-        { name: 'sh', value: 'sport-hard' },
-        { name: 'sm', value: 'sport-medium' },
-        { name: 'ss', value: 'sport-soft' },
-        { name: 'rh', value: 'racing-hard' },
-        { name: 'rm', value: 'racing-medium' },
-        { name: 'rs', value: 'racing-soft' },
-      ]
-    },
-    {
-      name: 'weight',
-      description: 'Your choice of tire compound.',
-      type: 4, // int
-      required: true,
-    },
-    {
-      name: 'balance',
-      description: 'Your vehicles weight balance.',
-      type: 4, // int
-      required: true,
-    },
-  ],
+// Helper to create deferred response (type 5)
+function deferReply() {
+  return new Response(
+    JSON.stringify({ type: 5 }), // Defer Channel Message
+    { headers: { 'Content-Type': 'application/json' } }
+  );
 }
 
-
-// PLACEHOLDER     !REPLACE!
-export async function execute(interaction) {
-  // Pull values from Discord command
-  const tire = interaction.data.options.find(o => o.name === 'tire-compound').value ?? 'comfort-hard'
-  const weight = interaction.data.options.find(o => o.name === 'vehicle_weight')?.value;
-  const balance = interaction.data.options.find(o => o.name === 'vehicle_balance')?.value;
-
-  const result = calculateDownforce(tire, weight, balance);
+// Helper to create follow-up patch body (simple text + optional embed)
+function createFollowUpBody(title, fields = [], color = 0xffd700, error = false) {
+  const embed = {
+    title,
+    color,
+    fields,
+    footer: { text: 'Pure grip focus • No speed trade-off • Values in lbs' },
+    timestamp: new Date().toISOString(),
+  };
 
   return {
-    type: 4, // ChannelMessageWithSource
-    data: {
-      embeds: [{
-        title: '✅ GT7 Downforce Tune',
-        description: `${tire} tire • ${weight} weight • ${balance} balance`,
-        fields: [
-          { name: 'Front Downforce', value: `${result.recommended.front} lbs`, inline: true },
-          { name: 'Rear Downforce', value: `${result.recommended.rear} lbs`, inline: true },
-          { name: 'Balance', value: result.recommended.balance, inline: true },
-          { name: 'Top Speed Loss', value: `-${result.topSpeedLoss} km/h`, inline: true },
-          { name: 'Cornering Gain', value: `+${result.corneringGainEstimate}%`, inline: true },
-        ],
-        color: 0x00ff00, // green
-        footer: { text: 'Adjust in-game sliders to match these values' },
-      }],
-    },
+    embeds: [embed],
   };
 }
+
+export async function handleTuneDownforce(interaction, env) {
+  const { data } = interaction;
+  const options = Object.fromEntries(
+    (data.options ?? []).map(opt => [opt.name, opt.value])
+  );
+
+  const weight = options.weight;
+  const front  = options.front;
+  const tire   = options.tire;
+
+  // 1. Immediately defer
+  const deferResponse = deferReply();
+  
+  // Run calculation (can be async if needed later)
+  const result = calculateGripTune(weight, front, tire);
+
+  let responseBody;
+
+  if ('error' in result) {
+    responseBody = createFollowUpBody(
+      'Invalid Input',
+      [{ name: 'Error', value: result.error }],
+      0xff0000, // red
+      true
+    );
+  } else {
+    const balance = `${front}% Front │ ${100 - front}% Rear`;
+
+    responseBody = createFollowUpBody('GT7 Grip-Optimized Tuning', [
+      { name: 'Weight',   value: `${weight.toLocaleString()} lbs`, inline: false },
+      { name: 'Balance',  value: balance, inline: false },
+      { name: 'Tire',     value: `${result.tireDisplay} (Grip: ${result.grip}g)`, inline: false },
+      {
+        name: '**FRONT**',
+        value: '```Downforce: ' + result.frontDF.padStart(6) + '\nNat Freq : ' + result.frontNF + ' Hz```',
+        inline: true,
+      },
+      {
+        name: '**REAR**',
+        value: '```Downforce: ' + result.rearDF.padStart(6) + '\nNat Freq : ' + result.rearNF + ' Hz```',
+        inline: true,
+      },
+    ]);
+  }
+
+  // 2. Edit the deferred message via webhook
+  const token = interaction.token;
+  const applicationId = interaction.application_id;
+  const editUrl = `https://discord.com/api/v10/webhooks/${applicationId}/${token}/messages/@original`;
+
+  await fetch(editUrl, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(responseBody),
+  });
+
+  // We already returned the defer response
+  return deferResponse;
+}
+
+// If you're using a router (e.g. itty-router), you would map:
+// router.post('/', async (req, env) => { ... parse body → if name === 'tune-downforce' → handleTuneDownforce(body, env) })

@@ -1,6 +1,4 @@
-// server.js...
 // DISPATCH TO COMMAND'S EXECUTE
-
 
 import { verifyKey } from 'discord-interactions';
 import { JsonResponse } from './utils.js'
@@ -61,20 +59,6 @@ export default {
         }), { headers: { 'Content-Type': 'application/json' } });
     }
   }
-      /* OLD HANDLER
-      const handler = commandHandlers[interaction.data.name.toLowerCase()];
-      if (handler) {
-        try {
-          const response = await handler(interaction);
-          return JsonResponse(response);
-        } catch (err) {
-          console.error(err);
-          return JsonResponse({ type: 4, data: { content: 'Error processing command' } });
-        }
-      }
-      return JsonResponse({ type: 4, data: { content: 'Unknown command' } });
-    }*/
-
-    return new Response('Not handled', { status: 400 });
+  return new Response('Not handled', { status: 400 });
   },
 };
