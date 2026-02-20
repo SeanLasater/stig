@@ -12,3 +12,11 @@ export class JsonResponse extends Response {
     super(jsonBody, init);
   }
 }
+
+// Helper to create deferred response (type 5) for main calculation logic.
+export function deferReply() {
+  return new Response(
+    JSON.stringify({ type: 5 }), // Defer Channel Message
+    { headers: { 'Content-Type': 'application/json' } }
+  );
+}

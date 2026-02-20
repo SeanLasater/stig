@@ -1,13 +1,5 @@
 import { calculateGripTune } from './logic.js';
 
-// Helper to create deferred response (type 5) for main calculation logic.
-function deferReply() {
-  return new Response(
-    JSON.stringify({ type: 5 }), // Defer Channel Message
-    { headers: { 'Content-Type': 'application/json' } }
-  );
-}
-
 // Create follow-up response (simple text + optional time embed)
 function createFollowUpBody(title, fields = [], color = 0xffd700, error = false) {
   const embed = {

@@ -1,4 +1,5 @@
 import { verifyKey } from 'discord-interactions';
+import { deferReply } from '../utils/utils.js'
 import { handleTuneDownforce } from './commands/tune-downforce/index';
 
 export default {
@@ -29,7 +30,7 @@ export default {
 
     if (body.type === 2 && body.data.name === 'tune-downforce') {
         const defer = deferReply();
-        ctx.waituntil(
+        ctx.waitUntil(
             handleTuneDownforce(body, env).catch(console.error)
         );
         return defer;
