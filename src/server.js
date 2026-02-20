@@ -1,6 +1,6 @@
 import { verifyKey } from 'discord-interactions';
 import { JsonResponse } from './utils.js';
-import { handleTuneDownforce, tuneDownforceCommand } from './commands/tune-downforce/index.js';
+import { handleTuneDownforce, command as tuneDownforceCommand } from './commands/tune-downforce/index.js';
 
 const commandHandlers = {
   'tune-downforce': handleTuneDownforce,
