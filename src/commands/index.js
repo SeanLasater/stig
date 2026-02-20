@@ -39,3 +39,5 @@ export default {
     return new Response('Unknown command', { status: 400 });
   },
 };
+
+export { handleTuneDownforce, command as tuneDownforceCommand } from './tune-downforce/index.js'
