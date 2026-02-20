@@ -205,14 +205,7 @@ router.post('/', async (request, env) => {
       }
 
       case TUNETRANSMISSION_COMMAND.name.toLowerCase(): {
-        const applicationId = env.DISCORD_APPLICATION_ID;
-        const INVITE_URL = `https://discord.com/oauth2/authorize?client_id=${applicationId}&scope=applications.commands`;
-        return new JsonResponse({
-          type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
-          data: {
-            content: INVITE_URL,
-          },
-        });
+        return new Response(`Transmission tuning coming soon! In the meantime, invite the bot to your server and try out the downforce tuning command:\n\n${INVITE_URL}`);
       }
       default:
         return new JsonResponse({ error: 'Unknown Type' }, { status: 400 });
