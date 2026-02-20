@@ -1,4 +1,5 @@
 import { calculateGripTune } from './logic.js';
+import { command } from './data.js'
 
 // Create follow-up response (simple text + optional time embed)
 function createFollowUpBody(title, fields = [], color = 0xffd700, error = false) {
@@ -70,3 +71,5 @@ export async function handleTuneDownforce(interaction, env) {
 
   // No return needed — this is background work
 }
+
+export { command };
