@@ -1,5 +1,5 @@
 import { verifyKey } from 'discord-interactions';
-import { handleTuneDownforce } from './commands/tune-downforce.js';
+import { handleTuneDownforce } from './commands/tune-downforce/index';
 
 export default {
   async fetch(request, env, ctx) {
