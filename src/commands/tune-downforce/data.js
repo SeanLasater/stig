@@ -1,4 +1,3 @@
-// data.js
 export const gripDict = {
   ch: 0.82, cm: 0.90, cs: 0.99,
   sh: 1.05, sm: 1.09, ss: 1.16,
