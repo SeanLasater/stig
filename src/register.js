@@ -1,4 +1,4 @@
-import { AWW_COMMAND, INVITE_COMMAND, TUNEDOWNFORCE_COMMAND, TUNETRANSMISSION_COMMAND } from './commands.js';
+import { TUNEDOWNFORCE_COMMAND, TUNETRANSMISSION_COMMAND } from './commands.js';
 import dotenv from 'dotenv';
 import process from 'node:process';
 
