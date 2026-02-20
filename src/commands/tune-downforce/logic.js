@@ -1,4 +1,3 @@
-// logic.js
 import { gripDict, tireNames } from './data.js';
 
 // NF = Natural Frequency

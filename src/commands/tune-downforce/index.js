@@ -18,7 +18,7 @@ function createFollowUpBody(title, fields = [], color = 0xffd700, error = false)
 // Your helpers (deferReply & createFollowUpBody) stay the same
 
 export async function handleTuneDownforce(interaction, env) {
-  // Extract options (this was missing in your new version!)
+  // Extract options
   const { data } = interaction;
   const options = Object.fromEntries(
     (data.options ?? []).map(opt => [opt.name, opt.value])
