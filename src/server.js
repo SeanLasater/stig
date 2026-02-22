@@ -11,7 +11,6 @@ import {
 import { TUNEDOWNFORCE_COMMAND, TUNETRANSMISSION_COMMAND, TUNEDIFFERENTIAL_COMMAND } from './commands.js';
 import { TRACK_CHOICES } from './transData.js';
 import { CARS } from './cars.js';
-import { createDiffScatterCanvas, canvasToDataURL } from './diffScatter.js';
 import { calculateGripTune } from './tuning.js';
 import { JsonResponse } from './utils.js';
 
@@ -77,13 +76,47 @@ function handleTuneDifferentialCommand(interaction) {
   const brakingSensitivity = options.braking_sensitivity;
 
   try {
-    const tuning = {
-      initialTorque,
-      accelerationSensitivity,
-      brakingSensitivity,
+    // Create QuickChart URL for scatter plot
+    const chartConfig = {
+      type: 'scatter',
+      data: {
+        datasets: [
+          {
+            label: 'Your Tuning',
+            data: [
+              {
+                x: accelerationSensitivity,
+                y: brakingSensitivity,
+              },
+            ],
+            pointRadius: 8,
+            pointBackgroundColor: 'rgba(0, 102, 255, 1)',
+            pointBorderColor: 'rgba(255, 255, 255, 1)',
+            pointBorderWidth: 2,
+          },
+        ],
+      },
+      options: {
+        plugins: {
+          legend: { display: true },
+          title: { display: true, text: 'LSD Behavior Analysis' },
+        },
+        scales: {
+          x: {
+            title: { display: true, text: 'Acceleration Sensitivity' },
+            min: 0,
+            max: 100,
+          },
+          y: {
+            title: { display: true, text: 'Braking Sensitivity' },
+            min: 0,
+            max: 100,
+          },
+        },
+      },
     };
-    const canvas = createDiffScatterCanvas(tuning);
-    const imageDataURL = canvasToDataURL(canvas);
+
+    const chartUrl = `https://quickchart.io/chart?c=${encodeURIComponent(JSON.stringify(chartConfig))}`;
 
     return new JsonResponse({
       type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
@@ -98,8 +131,8 @@ function handleTuneDifferentialCommand(interaction) {
               { name: 'Accel Sensitivity', value: `${accelerationSensitivity.toFixed(1)}`, inline: true },
               { name: 'Braking Sensitivity', value: `${brakingSensitivity.toFixed(1)}`, inline: true },
             ],
-            image: { url: imageDataURL },
-            footer: { text: 'Blue dot = your tuning • Size represents braking sensitivity' },
+            image: { url: chartUrl },
+            footer: { text: 'Blue dot = your tuning' },
             timestamp: new Date().toISOString(),
           },
         ],
