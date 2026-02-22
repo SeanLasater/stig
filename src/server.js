@@ -202,7 +202,30 @@ function handleTuneDifferentialCommand(interaction, env, ctx) {
         },
       };
 
-      const chartUrl = `https://quickchart.io/chart?c=${encodeURIComponent(JSON.stringify(chartConfig))}`;
+      // Create short QuickChart URL via POST to avoid overly long URLs (Discord limit 2048)
+      let chartUrl;
+      try {
+        const qcResp = await fetch('https://quickchart.io/chart/create', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ chart: chartConfig, width: 800, height: 450, backgroundColor: 'transparent' }),
+        });
+        const qcJson = await qcResp.json().catch(() => ({}));
+        if (qcResp.ok && qcJson.url) {
+          chartUrl = qcJson.url;
+        } else {
+          console.error('QuickChart create failed', qcResp.status, qcResp.statusText, qcJson);
+          chartUrl = `https://quickchart.io/chart?c=${encodeURIComponent(JSON.stringify(chartConfig))}`;
+        }
+      } catch (err) {
+        console.error('QuickChart create error', err);
+        chartUrl = `https://quickchart.io/chart?c=${encodeURIComponent(JSON.stringify(chartConfig))}`;
+      }
+
+      if (chartUrl.length > 2048) {
+        console.error('Generated chart URL exceeds Discord length limit; omitting image. URL length:', chartUrl.length);
+        chartUrl = null;
+      }
 
       // Send follow-up message via Discord webhook
       const appId = env.DISCORD_APPLICATION_ID || interaction.application_id || data.application_id;
@@ -212,23 +235,26 @@ function handleTuneDifferentialCommand(interaction, env, ctx) {
       }
 
       const webhookBase = `https://discord.com/api/v10/webhooks/${appId}/${token}`;
-      const payload = {
-        embeds: [
-          {
-            title: 'LSD Behavior Analysis',
-            description: `**${quadrantLabel}**\n${quadrantDescription}`,
-            color: embedColor,
-            fields: [
-              { name: 'Initial Torque', value: `${initialTorque.toFixed(1)}`, inline: true },
-              { name: 'Accel Sensitivity', value: `${accelerationSensitivity.toFixed(1)}`, inline: true },
-              { name: 'Braking Sensitivity', value: `${brakingSensitivity.toFixed(1)}`, inline: true },
-            ],
-            image: { url: chartUrl },
-            footer: { text: 'Gold dot = your tuning placement' },
-            timestamp: new Date().toISOString(),
-          },
+      const embed = {
+        title: 'LSD Behavior Analysis',
+        description: `**${quadrantLabel}**\n${quadrantDescription}`,
+        color: embedColor,
+        fields: [
+          { name: 'Initial Torque', value: `${initialTorque.toFixed(1)}`, inline: true },
+          { name: 'Accel Sensitivity', value: `${accelerationSensitivity.toFixed(1)}`, inline: true },
+          { name: 'Braking Sensitivity', value: `${brakingSensitivity.toFixed(1)}`, inline: true },
         ],
+        footer: { text: 'Gold dot = your tuning placement' },
+        timestamp: new Date().toISOString(),
       };
+
+      if (chartUrl) {
+        embed.image = { url: chartUrl };
+      } else {
+        embed.footer.text += ' (chart omitted: URL too long)';
+      }
+
+      const payload = { embeds: [embed] };
 
       // Try updating the original deferred response first
       const patchUrl = `${webhookBase}/messages/@original`;
