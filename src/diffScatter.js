@@ -2,12 +2,16 @@
 // This can be used to create images for Discord or web display
 
 /**
- * Creates a canvas with LSD behavior quadrants for RWD in GT7
+ * Creates a canvas with LSD behavior quadrants and plots a tuning point
+ * @param {Object} tuning - Tuning parameters object
+ * @param {number} tuning.accelerationSensitivity - Acceleration sensitivity (0-60)
+ * @param {number} tuning.initialTorque - Initial torque (0-60)
+ * @param {number} tuning.brakingSensitivity - Braking sensitivity (0-60)
  * @param {number} width - Canvas width in pixels (default: 800)
  * @param {number} height - Canvas height in pixels (default: 640)
  * @returns {HTMLCanvasElement} - Canvas element with the visualization
  */
-export function createDiffScatterCanvas(width = 800, height = 640) {
+export function createDiffScatterCanvas(tuning, width = 800, height = 640) {
   const canvas = typeof document !== 'undefined' ? document.createElement('canvas') : null;
   
   if (!canvas) {
@@ -179,6 +183,61 @@ export function createDiffScatterCanvas(width = 800, height = 640) {
     const y = dataToPixel(0, i);
     ctx.fillText(i, padding - 10, y.pixelY);
   }
+
+  // Plot the tuning point
+  const tuningPoint = dataToPixel(tuning.accelerationSensitivity, tuning.initialTorque);
+  
+  // Draw point with size based on braking sensitivity
+  const pointRadius = 10 + (tuning.brakingSensitivity / 60) * 5;
+  ctx.fillStyle = '#0066ff';
+  ctx.beginPath();
+  ctx.arc(tuningPoint.pixelX, tuningPoint.pixelY, pointRadius, 0, Math.PI * 2);
+  ctx.fill();
+  
+  // Draw point border
+  ctx.strokeStyle = '#003399';
+  ctx.lineWidth = 2;
+  ctx.stroke();
+
+  // Draw tuning info box
+  const infoX = tuningPoint.pixelX + 30;
+  const infoY = tuningPoint.pixelY - 50;
+  const boxWidth = 200;
+  const boxHeight = 90;
+
+  // Draw semi-transparent background for info box
+  ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
+  ctx.fillRect(infoX, infoY, boxWidth, boxHeight);
+  
+  ctx.strokeStyle = '#000000';
+  ctx.lineWidth = 1;
+  ctx.strokeRect(infoX, infoY, boxWidth, boxHeight);
+
+  // Draw tuning values
+  ctx.fillStyle = '#000000';
+  ctx.font = 'bold 11px Arial';
+  ctx.textAlign = 'left';
+  ctx.textBaseline = 'top';
+
+  ctx.fillText('Your Tuning:', infoX + 8, infoY + 8);
+  
+  ctx.font = '10px Arial';
+  ctx.fillText(`Accel: ${tuning.accelerationSensitivity.toFixed(1)}`, infoX + 8, infoY + 25);
+  ctx.fillText(`Initial: ${tuning.initialTorque.toFixed(1)}`, infoX + 8, infoY + 40);
+  ctx.fillText(`Braking: ${tuning.brakingSensitivity.toFixed(1)}`, infoX + 8, infoY + 55);
+
+  // Determine which quadrant
+  const isHighAccel = tuning.accelerationSensitivity >= accelMidpoint;
+  const isHighInitial = tuning.initialTorque >= initialMidpoint;
+  
+  let quadrantName = '';
+  if (!isHighAccel && !isHighInitial) quadrantName = 'Loose Oversteer';
+  else if (isHighAccel && !isHighInitial) quadrantName = 'Throttle-Stable Oversteer';
+  else if (!isHighAccel && isHighInitial) quadrantName = 'Preloaded Understeer';
+  else quadrantName = 'Full-Lock Stability';
+
+  ctx.font = '9px Arial';
+  ctx.fillText(`Zone: ${quadrantName}`, infoX + 8, infoY + 70);
 
   return canvas;
 }
