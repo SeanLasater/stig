@@ -76,11 +76,57 @@ function handleTuneDifferentialCommand(interaction) {
   const brakingSensitivity = options.braking_sensitivity;
 
   try {
-    // Create QuickChart URL for scatter plot
+    // Determine user's behavioral quadrant
+    const isHighAccel = accelerationSensitivity > 50;
+    const isHighBraking = brakingSensitivity > 50;
+    let quadrantLabel = '';
+    let quadrantDescription = '';
+
+    if (isHighAccel && isHighBraking) {
+      quadrantLabel = 'Locked & Stable';
+      quadrantDescription = 'High lock both accel & braking • Predictable but prone to oversteer on throttle • Best for grip racing';
+    } else if (isHighAccel && !isHighBraking) {
+      quadrantLabel = 'Oversteer Prone';
+      quadrantDescription = 'Strong accel lock, minimal braking lock • Rear slides freely under braking • Aggressive acceleration bias';
+    } else if (!isHighAccel && isHighBraking) {
+      quadrantLabel = 'Understeer Prone';
+      quadrantDescription = 'Minimal accel lock, strong braking lock • Front-heavy under braking • Conservative for smooth handling';
+    } else {
+      quadrantLabel = 'Free Diff';
+      quadrantDescription = 'Minimal lock both directions • Loose, drifty feel • Extreme lock-to-lock behavior';
+    }
+
+    // Create QuickChart URL with quadrant visualization
     const chartConfig = {
       type: 'scatter',
       data: {
         datasets: [
+          // Quadrant background indicators (invisible dataset for quadrant coloring)
+          {
+            label: 'Locked & Stable',
+            data: [{ x: 75, y: 75 }],
+            pointRadius: 0,
+            showLine: false,
+          },
+          {
+            label: 'Oversteer Prone',
+            data: [{ x: 75, y: 25 }],
+            pointRadius: 0,
+            showLine: false,
+          },
+          {
+            label: 'Understeer Prone',
+            data: [{ x: 25, y: 75 }],
+            pointRadius: 0,
+            showLine: false,
+          },
+          {
+            label: 'Free Diff',
+            data: [{ x: 25, y: 25 }],
+            pointRadius: 0,
+            showLine: false,
+          },
+          // User's tuning point
           {
             label: 'Your Tuning',
             data: [
@@ -89,17 +135,46 @@ function handleTuneDifferentialCommand(interaction) {
                 y: brakingSensitivity,
               },
             ],
-            pointRadius: 8,
-            pointBackgroundColor: 'rgba(0, 102, 255, 1)',
+            pointRadius: 10,
+            pointBackgroundColor: 'rgba(255, 215, 0, 1)',
             pointBorderColor: 'rgba(255, 255, 255, 1)',
-            pointBorderWidth: 2,
+            pointBorderWidth: 3,
           },
         ],
       },
       options: {
         plugins: {
           legend: { display: true },
-          title: { display: true, text: 'LSD Behavior Analysis' },
+          title: { display: true, text: 'LSD Behavior Quadrants' },
+          annotation: {
+            annotations: {
+              // Quadrant labels
+              quadrant1: {
+                type: 'label',
+                xValue: 75,
+                yValue: 75,
+                content: ['Locked &', 'Stable'],
+              },
+              quadrant2: {
+                type: 'label',
+                xValue: 75,
+                yValue: 25,
+                content: ['Oversteer', 'Prone'],
+              },
+              quadrant3: {
+                type: 'label',
+                xValue: 25,
+                yValue: 75,
+                content: ['Understeer', 'Prone'],
+              },
+              quadrant4: {
+                type: 'label',
+                xValue: 25,
+                yValue: 25,
+                content: ['Free', 'Diff'],
+              },
+            },
+          },
         },
         scales: {
           x: {
@@ -124,15 +199,15 @@ function handleTuneDifferentialCommand(interaction) {
         embeds: [
           {
             title: 'LSD Behavior Analysis',
-            description: 'Your differential tuning plotted on the behavior quadrants',
-            color: 0x0066ff,
+            description: `**${quadrantLabel}**\n${quadrantDescription}`,
+            color: isHighAccel && isHighBraking ? 0xff6b00 : isHighAccel && !isHighBraking ? 0xff0000 : !isHighAccel && isHighBraking ? 0x0066ff : 0xffff00,
             fields: [
               { name: 'Initial Torque', value: `${initialTorque.toFixed(1)}`, inline: true },
               { name: 'Accel Sensitivity', value: `${accelerationSensitivity.toFixed(1)}`, inline: true },
               { name: 'Braking Sensitivity', value: `${brakingSensitivity.toFixed(1)}`, inline: true },
             ],
             image: { url: chartUrl },
-            footer: { text: 'Blue dot = your tuning' },
+            footer: { text: 'Gold dot = your tuning • See which quadrant your settings fall into' },
             timestamp: new Date().toISOString(),
           },
         ],
