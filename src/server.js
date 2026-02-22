@@ -76,9 +76,9 @@ function handleTuneDifferentialCommand(interaction) {
   const brakingSensitivity = options.braking_sensitivity;
 
   try {
-    // Determine user's behavioral quadrant
-    const isHighAccel = accelerationSensitivity > 50;
-    const isHighBraking = brakingSensitivity > 50;
+    // Determine user's behavioral quadrant (midpoint is 30 for 0-60 range)
+    const isHighAccel = accelerationSensitivity > 30;
+    const isHighBraking = brakingSensitivity > 30;
     let quadrantLabel = '';
     let quadrantDescription = '';
     let embedColor = 0xffd700;
@@ -101,7 +101,7 @@ function handleTuneDifferentialCommand(interaction) {
       embedColor = 0xffff00;
     }
 
-    // Create QuickChart URL - simplified chart without annotations
+    // Create QuickChart URL with visible quadrant divisions
     const chartConfig = {
       type: 'scatter',
       data: {
@@ -125,19 +125,74 @@ function handleTuneDifferentialCommand(interaction) {
         plugins: {
           legend: { display: true },
           title: { display: true, text: 'LSD Behavior Quadrants' },
+          annotation: {
+            annotations: {
+              // Vertical line at x=30 (accel midpoint)
+              vLine: {
+                type: 'line',
+                xMin: 30,
+                xMax: 30,
+                yMin: 0,
+                yMax: 60,
+                borderColor: 'rgba(128, 128, 128, 0.5)',
+                borderWidth: 2,
+                borderDash: [5, 5],
+              },
+              // Horizontal line at y=30 (braking midpoint)
+              hLine: {
+                type: 'line',
+                xMin: 0,
+                xMax: 60,
+                yMin: 30,
+                yMax: 30,
+                borderColor: 'rgba(128, 128, 128, 0.5)',
+                borderWidth: 2,
+                borderDash: [5, 5],
+              },
+              // Quadrant labels
+              topRight: {
+                type: 'label',
+                xValue: 45,
+                yValue: 45,
+                content: ['Locked & Stable'],
+                font: { size: 11 },
+              },
+              bottomRight: {
+                type: 'label',
+                xValue: 45,
+                yValue: 15,
+                content: ['Oversteer Prone'],
+                font: { size: 11 },
+              },
+              topLeft: {
+                type: 'label',
+                xValue: 15,
+                yValue: 45,
+                content: ['Understeer Prone'],
+                font: { size: 11 },
+              },
+              bottomLeft: {
+                type: 'label',
+                xValue: 15,
+                yValue: 15,
+                content: ['Free Diff'],
+                font: { size: 11 },
+              },
+            },
+          },
         },
         scales: {
           x: {
-            title: { display: true, text: 'Acceleration Sensitivity →' },
+            title: { display: true, text: 'Acceleration Sensitivity (0 = Free, 60 = Locked) →' },
             min: 0,
-            max: 100,
-            ticks: { stepSize: 25 },
+            max: 60,
+            ticks: { stepSize: 15 },
           },
           y: {
-            title: { display: true, text: 'Braking Sensitivity →' },
+            title: { display: true, text: 'Braking Sensitivity (0 = Free, 60 = Locked) →' },
             min: 0,
-            max: 100,
-            ticks: { stepSize: 25 },
+            max: 60,
+            ticks: { stepSize: 15 },
           },
         },
       },
