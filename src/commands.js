@@ -64,7 +64,7 @@ export const TUNEDIFFERENTIAL_COMMAND = {
     {
       name: 'Initial Torque',
       description: 'Initial torque value (0-60)',
-      type: 10, // number
+      type: 10, // num
       required: true,
       min_value: 0,
       max_value: 60,
@@ -72,7 +72,7 @@ export const TUNEDIFFERENTIAL_COMMAND = {
     {
       name: 'Acceleration Sensitivity',
       description: 'Acceleration sensitivity value (0-60)',
-      type: 10, // number
+      type: 10, // num
       required: true,
       min_value: 0,
       max_value: 60,
@@ -80,7 +80,7 @@ export const TUNEDIFFERENTIAL_COMMAND = {
     {
       name: 'Braking Sensitivity',
       description: 'Braking sensitivity value (0-60)',
-      type: 10, // number
+      type: 10, // num
       required: true,
       min_value: 0,
       max_value: 60,
