@@ -5,24 +5,24 @@ import { TRACK_CHOICES, CAR_CHOICES } from './transData.js';
 
 // tune-downforce
 export const TUNEDOWNFORCE_COMMAND = {
-  name: 'tune-downforce',  // Name shown in Discord command picker (should be kebab-case: tune-downforce)
-  description: 'Tune for optimal downforce based on weight, balance, and tire.',  // Help text
+  name: 'tune-downforce',
+  description: 'Tune for optimal downforce based on weight, balance, and tire.',
   options: [
     {
       name: 'weight',                                 
       description: 'Car weight in pounds (lbs)',      
       type: 10, // num 
       required: true,                                  
-      min_value: 1000,                                 // Minimum weight (lbs)
-      max_value: 5000,                                 // Maximum weight (lbs)
+      min_value: 1000,                            
+      max_value: 5000,                                
     },
     {
       name: 'front',                               
       description: 'Front weight distribution % (e.g. 54)',  
       type: 10, // num 
       required: true,
-      min_value: 30,                                   // Minimum safe front weight %
-      max_value: 70,                                   // Maximum safe front weight %
+      min_value: 30, 
+      max_value: 70,
     },
     {
       name: 'tire',                                
@@ -53,5 +53,37 @@ export const TUNETRANSMISSION_COMMAND = {
       type: 3, // string
       choices: CAR_CHOICES,
     },
+  ],
+};
+
+// tune-differential
+export const TUNEDIFFERENTIAL_COMMAND = {
+  name: 'tune-differential',
+  description: 'Plot LSD behavior quadrants.',
+  options: [
+    {
+      name: 'Initial Torque',
+      description: 'Initial torque value (0-60)',
+      type: 10, // number
+      required: true,
+      min_value: 0,
+      max_value: 60,
+    },
+    {
+      name: 'Acceleration Sensitivity',
+      description: 'Acceleration sensitivity value (0-60)',
+      type: 10, // number
+      required: true,
+      min_value: 0,
+      max_value: 60,
+    },
+    {
+      name: 'Braking Sensitivity',
+      description: 'Braking sensitivity value (0-60)',
+      type: 10, // number
+      required: true,
+      min_value: 0,
+      max_value: 60,
+    }
   ],
 };
