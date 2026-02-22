@@ -1,10 +1,11 @@
 // Discord slash command definitions.
 // Example: 'tune-downforce' (not 'Tune-Downforce')
-
+import { TIRE_CHOICES } from './downforceData.js';
+import { TRACK_CHOICES, CAR_CHOICES } from './transData.js';
 
 // tune-downforce
 export const TUNEDOWNFORCE_COMMAND = {
-  name: 'Tune-Downforce',  // Name shown in Discord command picker (should be kebab-case: tune-downforce)
+  name: 'tune-downforce',  // Name shown in Discord command picker (should be kebab-case: tune-downforce)
   description: 'Tune for optimal downforce based on weight, balance, and tire.',  // Help text
   options: [
     {
@@ -28,19 +29,7 @@ export const TUNEDOWNFORCE_COMMAND = {
       description: 'Tire compound',                   
       type: 3, // string
       required: true,
-      choices: [
-        // Dropdown options for tire selection
-        // Format: { name: 'Display name', value: 'code used in calculation' }
-        { name: 'Comfort Hard',   value: 'ch' },    
-        { name: 'Comfort Medium', value: 'cm' },
-        { name: 'Comfort Soft',   value: 'cs' },
-        { name: 'Sports Hard',    value: 'sh' },
-        { name: 'Sports Medium',  value: 'sm' },
-        { name: 'Sports Soft',    value: 'ss' },
-        { name: 'Racing Hard',    value: 'rh' },
-        { name: 'Racing Medium',  value: 'rm' },
-        { name: 'Racing Soft',    value: 'rs' },    
-      ],
+      choices: TIRE_CHOICES,
     },
   ]
 };
@@ -48,7 +37,21 @@ export const TUNEDOWNFORCE_COMMAND = {
 
 // tune-transmission
 export const TUNETRANSMISSION_COMMAND = {
-  name: 'Tune-Transmission',                          
-  description: 'Tune transmission based on track and car.',  
-  // No options defined yet; to be implemented in future version
+  name: 'tune-transmission',                  
+  description: 'Tune transmission based on track and car.',
+  options: [  
+    {
+      name: 'track',                                 
+      description: 'Track name (e.g. "Monza")',
+      type: 3, // string
+      required: true,
+      choices: TRACK_CHOICES,
+    },
+    {
+      name: 'car',                                   
+      description: 'Car name (e.g. "Porsche 911 GT3 RS")',
+      type: 3, // string
+      choices: CAR_CHOICES,
+    },
+  ],
 };
