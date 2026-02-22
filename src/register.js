@@ -82,6 +82,37 @@ const TUNETRANSMISSION_COMMAND = {
   ],
 };
 
+const TUNEDIFFERENTIAL_COMMAND = {
+  name: 'tune-differential',
+  description: 'Predict LSD behavior quadrants for RWD based on initial torque and acceleration sensitivity.',
+  options: [
+    {
+      name: 'initial_torque',
+      description: 'Initial torque (0-60 scale, where 0 is low and 60 is high)',
+      type: 10, // number
+      required: true,
+      min_value: 0,
+      max_value: 60,
+    },
+    {
+      name: 'acceleration_sensitivity',
+      description: 'Acceleration sensitivity (0-60 scale, where 0 is low and 60 is high)',
+      type: 10, // number
+      required: true,
+      min_value: 0,
+      max_value: 60,
+    },
+    {
+      name: 'braking_sensitivity',
+      description: 'Braking sensitivity (0-60 scale, where 0 is low and 60 is high)',
+      type: 10, // number
+      required: true,
+      min_value: 0,
+      max_value: 60,
+    }
+  ],
+};
+
 /**
  * Register all commands globally.  This can take o(minutes), so wait until
  * you're sure these are the commands you want.
@@ -97,7 +128,7 @@ const response = await fetch(url, {
     Authorization: `Bot ${token}`,                   // Bot authentication header
   },
   method: 'PUT',  // PUT = register/update all commands at once
-  body: JSON.stringify([TUNEDOWNFORCE_COMMAND, TUNETRANSMISSION_COMMAND]),  // Array of commands to register
+  body: JSON.stringify([TUNEDOWNFORCE_COMMAND, TUNETRANSMISSION_COMMAND, TUNEDIFFERENTIAL_COMMAND]),  // Array of commands to register
 });
 
 // Check if command registration succeeded
