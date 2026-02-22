@@ -4,6 +4,8 @@
 
 import dotenv from 'dotenv';  // Load environment variables from .dev.vars
 import process from 'node:process';  // Access process.env for credentials
+import { TIRE_CHOICES } from './downforceData.js';
+import { TRACK_CHOICES, CAR_CHOICES } from './transData.js';
 
 /**
  * This file is meant to be run from the command line, and is not used by the
@@ -55,20 +57,29 @@ const TUNEDOWNFORCE_COMMAND = {
       description: 'Tire compound',
       type: 3,                                         // 3 = string with predefined choices
       required: true,
-      choices: [
-        // Dropdown options user selects from
-        { name: 'Comfort Hard', value: 'ch' }, { name: 'Comfort Medium', value: 'cm' }, { name: 'Comfort Soft', value: 'cs' },
-        { name: 'Sports Hard', value: 'sh' }, { name: 'Sports Medium', value: 'sm' }, { name: 'Sports Soft', value: 'ss' },
-        { name: 'Racing Hard', value: 'rh' }, { name: 'Racing Medium', value: 'rm' }, { name: 'Racing Soft', value: 'rs' },
-      ],
+      choices: TIRE_CHOICES,
     },
   ],
 };
 
-// Placeholder command for future transmission tuning feature
 const TUNETRANSMISSION_COMMAND = {
-  name: 'tune-transmission',                   // Lowercase command name
-  description: 'Tune transmission based on track and car.',  // Shown in Discord
+  name: 'tune-transmission',                  
+  description: 'Tune transmission based on track and car.',
+  options: [  
+    {
+      name: 'track',                                 
+      description: 'Track name (e.g. "Monza")',
+      type: 3, // string
+      required: true,
+      choices: TRACK_CHOICES,
+    },
+    {
+      name: 'car',                                   
+      description: 'Car name (e.g. "Porsche 911 GT3 RS")',
+      type: 3, // string
+      choices: CAR_CHOICES,
+    },
+  ],
 };
 
 /**

@@ -1,7 +1,7 @@
-/**
-CHANGE FOR MY APP!
- */
+// Server-side code for Cloudflare Worker handling Discord interactions and GT7 tuning calculations
+// This file defines the HTTP request handler, command processing logic, and physics calculations for the tune-downforce command.
 
+// It uses the itty-router library for routing and discord-interactions for request verification and response formatting.
 import { AutoRouter } from 'itty-router';
 import {
   InteractionResponseType,
@@ -27,8 +27,8 @@ class JsonResponse extends Response {
 // ──────────────────────────────────────────────────────────────
 // Embedded tune-downforce data & logic
 // ──────────────────────────────────────────────────────────────
+
 // Maps tire compounds to grip coefficients; used to calculate vehicle downforce and natural frequency
-// Lower values (comfort tires) = less grip; Higher values (racing tires) = more grip
 const gripDict = {
   ch: 0.82, cm: 0.90, cs: 0.99,  // Comfort: Hard, Medium, Soft
   sh: 1.05, sm: 1.09, ss: 1.16,  // Sports: Hard, Medium, Soft
@@ -87,13 +87,13 @@ function calculateGripTune(weightLbs, frontPercent, tire) {
 // Discord slash command definition for tune-downforce; defines command name, description, and input options
 const TUNEDOWNFORCE_COMMAND = {
   name: 'tune-downforce',  // Command invoked as /tune-downforce
-  description: 'GT7 grip-optimized downforce & natural frequency',  // Help text shown in Discord
-  // Define three required input options for the command
+  description: 'GT7 grip-optimized downforce & natural frequency',
+  // Slash command inputs.
   options: [
     {
       name: 'weight',                                 // Parameter name users will see
       description: 'Car weight in pounds (lbs)',      // Help text for this parameter
-      type: 10,                                        // Type 10 = number
+      type: 10, // num
       required: true,                                  // User must provide this value
       min_value: 1000,                                 // Minimum weight constraint
       max_value: 5000,                                 // Maximum weight constraint
@@ -101,7 +101,7 @@ const TUNEDOWNFORCE_COMMAND = {
     {
       name: 'front',                                   // Parameter name for weight distribution
       description: 'Front weight distribution % (e.g. 54)',
-      type: 10,                                        // Type 10 = number
+      type: 10, // num
       required: true,
       min_value: 30,                                   // Minimum front% for valid tuning
       max_value: 70,                                   // Maximum front% for valid tuning
@@ -109,7 +109,7 @@ const TUNEDOWNFORCE_COMMAND = {
     {
       name: 'tire',                                    // Parameter name for tire selection
       description: 'Tire compound',
-      type: 3,                                         // Type 3 = string with predefined choices
+      type: 3, // string
       required: true,
       choices: [  // User selects from this dropdown list
 
