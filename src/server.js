@@ -68,16 +68,15 @@ function handleTuneDownforceCommand(interaction) {
 }
 
 // Handler for /tune-differential command
-async function handleTuneDifferentialCommand(interaction, env) {
-  const { data, token, id, application_id } = interaction;
+function handleTuneDifferentialCommand(interaction, env, ctx) {
+  const { data, token } = interaction;
   const options = Object.fromEntries((data.options ?? []).map(opt => [opt.name, opt.value]));
   const initialTorque = options.initial_torque;
   const accelerationSensitivity = options.acceleration_sensitivity;
   const brakingSensitivity = options.braking_sensitivity;
 
-  // Immediately return a deferred response to avoid timeout
-  // Then send the detailed chart as a follow-up
-  (async () => {
+  // Create promise for follow-up chart generation
+  const followUpPromise = (async () => {
     try {
       // Determine user's behavioral quadrant (midpoint is 30 for 0-60 range)
       const isHighAccel = accelerationSensitivity > 30;
@@ -237,6 +236,11 @@ async function handleTuneDifferentialCommand(interaction, env) {
     }
   })();
 
+  // Tell Cloudflare to wait for the follow-up promise before shutting down
+  if (ctx && ctx.waitUntil) {
+    ctx.waitUntil(followUpPromise);
+  }
+
   // Return deferred response immediately
   return new JsonResponse({
     type: InteractionResponseType.DEFERRED_CHANNEL_MESSAGE_WITH_SOURCE,
@@ -311,7 +315,7 @@ router.get('/', (request, env) => {
 });
 
 // POST / route — main handler for all Discord interactions (ping, slash commands, etc.)
-router.post('/', async (request, env) => {
+router.post('/', async (request, env, ctx) => {
   // Verify request signature with Discord's public key (prevents unauthorized requests)
   const { isValid, interaction } = await server.verifyDiscordRequest(
     request,
@@ -358,7 +362,7 @@ router.post('/', async (request, env) => {
       }
 
       case TUNEDIFFERENTIAL_COMMAND.name.toLowerCase(): {
-        return handleTuneDifferentialCommand(interaction, env);
+        return handleTuneDifferentialCommand(interaction, env, ctx);
       }
 
       default:
