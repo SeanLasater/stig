@@ -116,6 +116,7 @@ function handleTuneDifferentialCommand(interaction) {
             fill: false,
             pointRadius: 0,
             showLine: true,
+            hidden: true,
           },
           // Horizontal line at y=30 (braking midpoint)
           {
@@ -127,6 +128,7 @@ function handleTuneDifferentialCommand(interaction) {
             fill: false,
             pointRadius: 0,
             showLine: true,
+            hidden: true,
           },
           // User's tuning point
           {
