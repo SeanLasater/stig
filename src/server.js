@@ -101,7 +101,7 @@ function handleTuneDifferentialCommand(interaction) {
       embedColor = 0xffff00;
     }
 
-    // Create QuickChart URL with quadrant lines
+    // Create QuickChart URL with quadrant lines and labels
     const chartConfig = {
       type: 'scatter',
       data: {
@@ -151,6 +151,37 @@ function handleTuneDifferentialCommand(interaction) {
         plugins: {
           legend: { display: true },
           title: { display: true, text: 'LSD Behavior Quadrants' },
+          datalabels: {
+            display: false,
+          },
+          annotation: {
+            annotations: {
+              topRight: {
+                type: 'label',
+                xValue: 45,
+                yValue: 45,
+                content: ['Locked &', 'Stable'],
+              },
+              bottomRight: {
+                type: 'label',
+                xValue: 45,
+                yValue: 15,
+                content: ['Oversteer', 'Prone'],
+              },
+              topLeft: {
+                type: 'label',
+                xValue: 15,
+                yValue: 45,
+                content: ['Understeer', 'Prone'],
+              },
+              bottomLeft: {
+                type: 'label',
+                xValue: 15,
+                yValue: 15,
+                content: ['Free', 'Diff'],
+              },
+            },
+          },
         },
         scales: {
           x: {
