@@ -68,174 +68,174 @@ function handleTuneDownforceCommand(interaction) {
 }
 
 // Handler for /tune-differential command
-function handleTuneDifferentialCommand(interaction) {
-  const { data } = interaction;
+async function handleTuneDifferentialCommand(interaction, env) {
+  const { data, token, id } = interaction;
   const options = Object.fromEntries((data.options ?? []).map(opt => [opt.name, opt.value]));
   const initialTorque = options.initial_torque;
   const accelerationSensitivity = options.acceleration_sensitivity;
   const brakingSensitivity = options.braking_sensitivity;
 
-  try {
-    // Determine user's behavioral quadrant (midpoint is 30 for 0-60 range)
-    const isHighAccel = accelerationSensitivity > 30;
-    const isHighBraking = brakingSensitivity > 30;
-    let quadrantLabel = '';
-    let quadrantDescription = '';
-    let embedColor = 0xffd700;
+  // Immediately return a deferred response to avoid timeout
+  // Then send the detailed chart as a follow-up
+  (async () => {
+    try {
+      // Determine user's behavioral quadrant (midpoint is 30 for 0-60 range)
+      const isHighAccel = accelerationSensitivity > 30;
+      const isHighBraking = brakingSensitivity > 30;
+      let quadrantLabel = '';
+      let quadrantDescription = '';
+      let embedColor = 0xffd700;
 
-    if (isHighAccel && isHighBraking) {
-      quadrantLabel = 'Locked & Stable';
-      quadrantDescription = 'High lock both accel & braking • Predictable but prone to oversteer on throttle • Best for grip racing';
-      embedColor = 0xff6b00;
-    } else if (isHighAccel && !isHighBraking) {
-      quadrantLabel = 'Oversteer Prone';
-      quadrantDescription = 'Strong accel lock, minimal braking lock • Rear slides freely under braking • Aggressive acceleration bias';
-      embedColor = 0xff0000;
-    } else if (!isHighAccel && isHighBraking) {
-      quadrantLabel = 'Understeer Prone';
-      quadrantDescription = 'Minimal accel lock, strong braking lock • Front-heavy under braking • Conservative for smooth handling';
-      embedColor = 0x0066ff;
-    } else {
-      quadrantLabel = 'Free Diff';
-      quadrantDescription = 'Minimal lock both directions • Loose, drifty feel • Extreme lock-to-lock behavior';
-      embedColor = 0xffff00;
-    }
+      if (isHighAccel && isHighBraking) {
+        quadrantLabel = 'Locked & Stable';
+        quadrantDescription = 'High lock both accel & braking • Predictable but prone to oversteer on throttle • Best for grip racing';
+        embedColor = 0xff6b00;
+      } else if (isHighAccel && !isHighBraking) {
+        quadrantLabel = 'Oversteer Prone';
+        quadrantDescription = 'Strong accel lock, minimal braking lock • Rear slides freely under braking • Aggressive acceleration bias';
+        embedColor = 0xff0000;
+      } else if (!isHighAccel && isHighBraking) {
+        quadrantLabel = 'Understeer Prone';
+        quadrantDescription = 'Minimal accel lock, strong braking lock • Front-heavy under braking • Conservative for smooth handling';
+        embedColor = 0x0066ff;
+      } else {
+        quadrantLabel = 'Free Diff';
+        quadrantDescription = 'Minimal lock both directions • Loose, drifty feel • Extreme lock-to-lock behavior';
+        embedColor = 0xffff00;
+      }
 
-    // Create QuickChart URL with quadrant lines and labels
-    const chartConfig = {
-      type: 'scatter',
-      data: {
-        datasets: [
-          // Vertical line at x=30 (accel midpoint)
-          {
-            label: '',
-            type: 'line',
-            data: [{ x: 30, y: 0 }, { x: 30, y: 60 }],
-            borderColor: 'rgba(200, 200, 200, 0.8)',
-            borderWidth: 2,
-            fill: false,
-            pointRadius: 0,
-            showLine: true,
-            hidden: true,
-          },
-          // Horizontal line at y=30 (braking midpoint)
-          {
-            label: '',
-            type: 'line',
-            data: [{ x: 0, y: 30 }, { x: 60, y: 30 }],
-            borderColor: 'rgba(200, 200, 200, 0.8)',
-            borderWidth: 2,
-            fill: false,
-            pointRadius: 0,
-            showLine: true,
-            hidden: true,
-          },
-          // User's tuning point
-          {
-            label: 'Your Tuning',
-            type: 'scatter',
-            data: [
-              {
-                x: accelerationSensitivity,
-                y: brakingSensitivity,
-              },
-            ],
-            pointRadius: 10,
-            pointBackgroundColor: 'rgba(255, 215, 0, 1)',
-            pointBorderColor: 'rgba(255, 255, 255, 1)',
-            pointBorderWidth: 3,
-          },
-        ],
-      },
-      options: {
-        plugins: {
-          legend: { display: true },
-          title: { display: true, text: 'LSD Behavior Quadrants' },
-          datalabels: {
-            display: false,
-          },
-          annotation: {
-            annotations: {
-              topRight: {
-                type: 'label',
-                xValue: 45,
-                yValue: 45,
-                content: ['Locked &', 'Stable'],
-              },
-              bottomRight: {
-                type: 'label',
-                xValue: 45,
-                yValue: 15,
-                content: ['Oversteer', 'Prone'],
-              },
-              topLeft: {
-                type: 'label',
-                xValue: 15,
-                yValue: 45,
-                content: ['Understeer', 'Prone'],
-              },
-              bottomLeft: {
-                type: 'label',
-                xValue: 15,
-                yValue: 15,
-                content: ['Free', 'Diff'],
+      // Create detailed QuickChart with all annotations
+      const chartConfig = {
+        type: 'scatter',
+        data: {
+          datasets: [
+            // Vertical line at x=30 (accel midpoint)
+            {
+              label: '',
+              type: 'line',
+              data: [{ x: 30, y: 0 }, { x: 30, y: 60 }],
+              borderColor: 'rgba(200, 200, 200, 0.8)',
+              borderWidth: 2,
+              fill: false,
+              pointRadius: 0,
+              showLine: true,
+              hidden: true,
+            },
+            // Horizontal line at y=30 (braking midpoint)
+            {
+              label: '',
+              type: 'line',
+              data: [{ x: 0, y: 30 }, { x: 60, y: 30 }],
+              borderColor: 'rgba(200, 200, 200, 0.8)',
+              borderWidth: 2,
+              fill: false,
+              pointRadius: 0,
+              showLine: true,
+              hidden: true,
+            },
+            // User's tuning point
+            {
+              label: 'Your Tuning',
+              type: 'scatter',
+              data: [
+                {
+                  x: accelerationSensitivity,
+                  y: brakingSensitivity,
+                },
+              ],
+              pointRadius: 10,
+              pointBackgroundColor: 'rgba(255, 215, 0, 1)',
+              pointBorderColor: 'rgba(255, 255, 255, 1)',
+              pointBorderWidth: 3,
+            },
+          ],
+        },
+        options: {
+          plugins: {
+            legend: { display: true },
+            title: { display: true, text: 'LSD Behavior Quadrants' },
+            datalabels: {
+              display: false,
+            },
+            annotation: {
+              annotations: {
+                topRight: {
+                  type: 'label',
+                  xValue: 45,
+                  yValue: 45,
+                  content: ['Locked &', 'Stable'],
+                },
+                bottomRight: {
+                  type: 'label',
+                  xValue: 45,
+                  yValue: 15,
+                  content: ['Oversteer', 'Prone'],
+                },
+                topLeft: {
+                  type: 'label',
+                  xValue: 15,
+                  yValue: 45,
+                  content: ['Understeer', 'Prone'],
+                },
+                bottomLeft: {
+                  type: 'label',
+                  xValue: 15,
+                  yValue: 15,
+                  content: ['Free', 'Diff'],
+                },
               },
             },
           },
+          scales: {
+            x: {
+              title: { display: true, text: 'Acceleration Sensitivity (0-60)' },
+              min: 0,
+              max: 60,
+              ticks: { stepSize: 10 },
+            },
+            y: {
+              title: { display: true, text: 'Braking Sensitivity (0-60)' },
+              min: 0,
+              max: 60,
+              ticks: { stepSize: 10 },
+            },
+          },
         },
-        scales: {
-          x: {
-            title: { display: true, text: 'Acceleration Sensitivity (0-60)' },
-            min: 0,
-            max: 60,
-            ticks: { stepSize: 10 },
-          },
-          y: {
-            title: { display: true, text: 'Braking Sensitivity (0-60)' },
-            min: 0,
-            max: 60,
-            ticks: { stepSize: 10 },
-          },
-        },
-      },
-    };
+      };
 
-    const chartUrl = `https://quickchart.io/chart?c=${encodeURIComponent(JSON.stringify(chartConfig))}`;
+      const chartUrl = `https://quickchart.io/chart?c=${encodeURIComponent(JSON.stringify(chartConfig))}`;
 
-    return new JsonResponse({
-      type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
-      data: {
-        embeds: [
-          {
-            title: 'LSD Behavior Analysis',
-            description: `**${quadrantLabel}**\n${quadrantDescription}`,
-            color: embedColor,
-            fields: [
-              { name: 'Initial Torque', value: `${initialTorque.toFixed(1)}`, inline: true },
-              { name: 'Accel Sensitivity', value: `${accelerationSensitivity.toFixed(1)}`, inline: true },
-              { name: 'Braking Sensitivity', value: `${brakingSensitivity.toFixed(1)}`, inline: true },
-            ],
-            image: { url: chartUrl },
-            footer: { text: 'Gold dot = your tuning • Quadrants: TL=Stable, TR=Oversteer, BL=Understeer, BR=Free' },
-            timestamp: new Date().toISOString(),
-          },
-        ],
-      },
-    });
-  } catch (error) {
-    return new JsonResponse({
-      type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
-      data: {
-        embeds: [
-          {
-            title: 'Visualization Error',
-            description: `Failed to generate differential plot: ${error.message}`,
-            color: 0xff0000,
-          },
-        ],
-      },
-    });
-  }
+      // Send follow-up message via Discord webhook
+      await fetch(`https://discord.com/api/v10/webhooks/${env.DISCORD_APPLICATION_ID}/${token}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          embeds: [
+            {
+              title: 'LSD Behavior Analysis',
+              description: `**${quadrantLabel}**\n${quadrantDescription}`,
+              color: embedColor,
+              fields: [
+                { name: 'Initial Torque', value: `${initialTorque.toFixed(1)}`, inline: true },
+                { name: 'Accel Sensitivity', value: `${accelerationSensitivity.toFixed(1)}`, inline: true },
+                { name: 'Braking Sensitivity', value: `${brakingSensitivity.toFixed(1)}`, inline: true },
+              ],
+              image: { url: chartUrl },
+              footer: { text: 'Gold dot = your tuning placement' },
+              timestamp: new Date().toISOString(),
+            },
+          ],
+        }),
+      });
+    } catch (error) {
+      console.error('Error sending follow-up:', error);
+    }
+  })();
+
+  // Return deferred response immediately
+  return new JsonResponse({
+    type: InteractionResponseType.DEFERRED_CHANNEL_MESSAGE_WITH_SOURCE,
+  });
 }
 
 // Handler for autocomplete interactions (user typing in a slash command option)
@@ -353,7 +353,7 @@ router.post('/', async (request, env) => {
       }
 
       case TUNEDIFFERENTIAL_COMMAND.name.toLowerCase(): {
-        return handleTuneDifferentialCommand(interaction);
+        return handleTuneDifferentialCommand(interaction, env);
       }
 
       default:
