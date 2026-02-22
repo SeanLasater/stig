@@ -69,7 +69,7 @@ function handleTuneDownforceCommand(interaction) {
 
 // Handler for /tune-differential command
 async function handleTuneDifferentialCommand(interaction, env) {
-  const { data, token, id } = interaction;
+  const { data, token, id, application_id } = interaction;
   const options = Object.fromEntries((data.options ?? []).map(opt => [opt.name, opt.value]));
   const initialTorque = options.initial_torque;
   const accelerationSensitivity = options.acceleration_sensitivity;
@@ -206,7 +206,8 @@ async function handleTuneDifferentialCommand(interaction, env) {
       const chartUrl = `https://quickchart.io/chart?c=${encodeURIComponent(JSON.stringify(chartConfig))}`;
 
       // Send follow-up message via Discord webhook
-      await fetch(`https://discord.com/api/v10/webhooks/${env.DISCORD_APPLICATION_ID}/${token}`, {
+      const webhookUrl = `https://discord.com/api/v10/webhooks/${env.DISCORD_APPLICATION_ID}/${token}`;
+      const response = await fetch(webhookUrl, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -227,6 +228,10 @@ async function handleTuneDifferentialCommand(interaction, env) {
           ],
         }),
       });
+
+      if (!response.ok) {
+        console.error(`Webhook failed: ${response.status} ${response.statusText}`, await response.text());
+      }
     } catch (error) {
       console.error('Error sending follow-up:', error);
     }
