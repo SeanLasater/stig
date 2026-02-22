@@ -10,6 +10,7 @@ import {
 } from 'discord-interactions';
 import { TUNEDOWNFORCE_COMMAND, TUNETRANSMISSION_COMMAND, TUNEDIFFERENTIAL_COMMAND } from './commands.js';
 import { TRACK_CHOICES } from './transData.js';
+import { CARS } from './cars.js';
 import { createDiffScatterCanvas, canvasToDataURL } from './diffScatter.js';
 import { calculateGripTune } from './tuning.js';
 import { JsonResponse } from './utils.js';
@@ -147,6 +148,26 @@ function handleAutocomplete(interaction) {
         choices: filtered.map(track => ({
           name: track.name,
           value: track.value,
+        })),
+      },
+    });
+  }
+
+  // Handle autocomplete for car selection in tune-transmission command
+  if (focusedOption.name === 'car') {
+    const focusedValue = focusedOption.value.toLowerCase();
+    
+    // Filter cars based on user input
+    const filtered = CARS
+      .filter(car => car.name.toLowerCase().includes(focusedValue))
+      .slice(0, 25); // Discord limit: max 25 choices shown at a time
+
+    return new JsonResponse({
+      type: InteractionResponseType.APPLICATION_COMMAND_AUTOCOMPLETE_RESULT,
+      data: {
+        choices: filtered.map(car => ({
+          name: car.name,
+          value: car.value,
         })),
       },
     });

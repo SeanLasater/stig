@@ -1,7 +1,7 @@
 // Discord slash command definitions.
 // Example: 'tune-downforce' (not 'Tune-Downforce')
 import { TIRE_CHOICES } from './downforceData.js';
-import { TRACK_CHOICES, CAR_CHOICES } from './transData.js';
+import { TRACK_CHOICES } from './transData.js';
 
 // tune-downforce
 export const TUNEDOWNFORCE_COMMAND = {
@@ -51,7 +51,7 @@ export const TUNETRANSMISSION_COMMAND = {
       name: 'car',                                   
       description: 'Car name (e.g. "Porsche 911 GT3 RS")',
       type: 3, // string
-      choices: CAR_CHOICES,
+      autocomplete: true,
     },
   ],
 };
