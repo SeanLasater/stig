@@ -110,27 +110,27 @@ function handleTuneDifferentialCommand(interaction, env, ctx) {
           datasets: [
             // Vertical line at x=30 (accel midpoint)
             {
-              label: '',
+              label: 'Accel Mid',
               type: 'line',
               data: [{ x: 30, y: 0 }, { x: 30, y: 60 }],
-              borderColor: 'rgba(200, 200, 200, 0.8)',
-              borderWidth: 2,
+              borderColor: 'rgba(200, 200, 200, 0.95)',
+              borderWidth: 3,
               fill: false,
               pointRadius: 0,
               showLine: true,
-              hidden: true,
+              borderDash: [6, 6],
             },
             // Horizontal line at y=30 (braking midpoint)
             {
-              label: '',
+              label: 'Braking Mid',
               type: 'line',
               data: [{ x: 0, y: 30 }, { x: 60, y: 30 }],
-              borderColor: 'rgba(200, 200, 200, 0.8)',
-              borderWidth: 2,
+              borderColor: 'rgba(200, 200, 200, 0.95)',
+              borderWidth: 3,
               fill: false,
               pointRadius: 0,
               showLine: true,
-              hidden: true,
+              borderDash: [6, 6],
             },
             // User's tuning point
             {
@@ -151,7 +151,7 @@ function handleTuneDifferentialCommand(interaction, env, ctx) {
         },
         options: {
           plugins: {
-            legend: { display: true },
+            legend: { display: false },
             title: { display: true, text: 'LSD Behavior Quadrants' },
             datalabels: {
               display: false,
