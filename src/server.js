@@ -101,13 +101,37 @@ function handleTuneDifferentialCommand(interaction) {
       embedColor = 0xffff00;
     }
 
-    // Create QuickChart URL - simplified chart for fast response
+    // Create QuickChart URL with quadrant lines
     const chartConfig = {
       type: 'scatter',
       data: {
         datasets: [
+          // Vertical line at x=30 (accel midpoint)
+          {
+            label: '',
+            type: 'line',
+            data: [{ x: 30, y: 0 }, { x: 30, y: 60 }],
+            borderColor: 'rgba(200, 200, 200, 0.8)',
+            borderWidth: 2,
+            fill: false,
+            pointRadius: 0,
+            showLine: true,
+          },
+          // Horizontal line at y=30 (braking midpoint)
+          {
+            label: '',
+            type: 'line',
+            data: [{ x: 0, y: 30 }, { x: 60, y: 30 }],
+            borderColor: 'rgba(200, 200, 200, 0.8)',
+            borderWidth: 2,
+            fill: false,
+            pointRadius: 0,
+            showLine: true,
+          },
+          // User's tuning point
           {
             label: 'Your Tuning',
+            type: 'scatter',
             data: [
               {
                 x: accelerationSensitivity,
@@ -131,13 +155,13 @@ function handleTuneDifferentialCommand(interaction) {
             title: { display: true, text: 'Acceleration Sensitivity (0-60)' },
             min: 0,
             max: 60,
-            ticks: { stepSize: 15 },
+            ticks: { stepSize: 10 },
           },
           y: {
             title: { display: true, text: 'Braking Sensitivity (0-60)' },
             min: 0,
             max: 60,
-            ticks: { stepSize: 15 },
+            ticks: { stepSize: 10 },
           },
         },
       },
