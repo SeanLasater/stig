@@ -9,6 +9,7 @@ import {
   verifyKey,
 } from 'discord-interactions';
 import { TUNEDOWNFORCE_COMMAND, TUNETRANSMISSION_COMMAND, TUNEDIFFERENTIAL_COMMAND } from './commands.js';
+import { TRACK_CHOICES } from './transData.js';
 import { createDiffScatterCanvas, canvasToDataURL } from './diffScatter.js';
 import { calculateGripTune } from './tuning.js';
 import { JsonResponse } from './utils.js';
@@ -119,6 +120,45 @@ function handleTuneDifferentialCommand(interaction) {
   }
 }
 
+// Handler for autocomplete interactions (user typing in a slash command option)
+function handleAutocomplete(interaction) {
+  const { data } = interaction;
+  const focusedOption = data.options?.find(opt => opt.focused);
+  
+  if (!focusedOption) {
+    return new JsonResponse({
+      type: InteractionResponseType.APPLICATION_COMMAND_AUTOCOMPLETE_RESULT,
+      data: { choices: [] },
+    });
+  }
+
+  // Handle autocomplete for track selection in tune-transmission command
+  if (focusedOption.name === 'track') {
+    const focusedValue = focusedOption.value.toLowerCase();
+    
+    // Filter tracks based on user input
+    const filtered = TRACK_CHOICES
+      .filter(track => track.name.toLowerCase().includes(focusedValue))
+      .slice(0, 25); // Discord limit: max 25 choices shown at a time
+
+    return new JsonResponse({
+      type: InteractionResponseType.APPLICATION_COMMAND_AUTOCOMPLETE_RESULT,
+      data: {
+        choices: filtered.map(track => ({
+          name: track.name,
+          value: track.value,
+        })),
+      },
+    });
+  }
+
+  // No matching autocomplete handler
+  return new JsonResponse({
+    type: InteractionResponseType.APPLICATION_COMMAND_AUTOCOMPLETE_RESULT,
+    data: { choices: [] },
+  });
+}
+
 // Create router to handle HTTP requests; directs GET/POST to appropriate handlers
 const router = AutoRouter();
 
@@ -145,6 +185,11 @@ router.post('/', async (request, env) => {
     return new JsonResponse({
       type: InteractionResponseType.PONG,
     });
+  }
+
+  // Handle APPLICATION_COMMAND_AUTOCOMPLETE interaction (user typing in autocomplete field)
+  if (interaction.type === InteractionType.APPLICATION_COMMAND_AUTOCOMPLETE) {
+    return handleAutocomplete(interaction);
   }
 
   // Handle APPLICATION_COMMAND interaction (user typed a slash command)

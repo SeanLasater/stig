@@ -45,7 +45,7 @@ export const TUNETRANSMISSION_COMMAND = {
       description: 'Track name (e.g. "Monza")',
       type: 3, // string
       required: true,
-      choices: TRACK_CHOICES,
+      autocomplete: true,
     },
     {
       name: 'car',                                   
