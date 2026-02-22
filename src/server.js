@@ -206,36 +206,54 @@ function handleTuneDifferentialCommand(interaction, env, ctx) {
 
       // Send follow-up message via Discord webhook
       const appId = env.DISCORD_APPLICATION_ID || interaction.application_id || data.application_id;
-      const webhookUrl = `https://discord.com/api/v10/webhooks/${appId}/${token}`;
       if (!appId) {
         console.error('Missing Discord application id (env.DISCORD_APPLICATION_ID or interaction.application_id). Cannot send follow-up.');
         return;
       }
 
-      const response = await fetch(webhookUrl, {
-        method: 'POST',
+      const webhookBase = `https://discord.com/api/v10/webhooks/${appId}/${token}`;
+      const payload = {
+        embeds: [
+          {
+            title: 'LSD Behavior Analysis',
+            description: `**${quadrantLabel}**\n${quadrantDescription}`,
+            color: embedColor,
+            fields: [
+              { name: 'Initial Torque', value: `${initialTorque.toFixed(1)}`, inline: true },
+              { name: 'Accel Sensitivity', value: `${accelerationSensitivity.toFixed(1)}`, inline: true },
+              { name: 'Braking Sensitivity', value: `${brakingSensitivity.toFixed(1)}`, inline: true },
+            ],
+            image: { url: chartUrl },
+            footer: { text: 'Gold dot = your tuning placement' },
+            timestamp: new Date().toISOString(),
+          },
+        ],
+      };
+
+      // Try updating the original deferred response first
+      const patchUrl = `${webhookBase}/messages/@original`;
+      let response = await fetch(patchUrl, {
+        method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          embeds: [
-            {
-              title: 'LSD Behavior Analysis',
-              description: `**${quadrantLabel}**\n${quadrantDescription}`,
-              color: embedColor,
-              fields: [
-                { name: 'Initial Torque', value: `${initialTorque.toFixed(1)}`, inline: true },
-                { name: 'Accel Sensitivity', value: `${accelerationSensitivity.toFixed(1)}`, inline: true },
-                { name: 'Braking Sensitivity', value: `${brakingSensitivity.toFixed(1)}`, inline: true },
-              ],
-              image: { url: chartUrl },
-              footer: { text: 'Gold dot = your tuning placement' },
-              timestamp: new Date().toISOString(),
-            },
-          ],
-        }),
+        body: JSON.stringify({ embeds: payload.embeds }),
       });
 
       if (!response.ok) {
-        console.error(`Webhook failed: ${response.status} ${response.statusText}`, await response.text());
+        // Log patch failure and body, then fall back to POSTing a follow-up
+        const text = await response.text().catch(() => '<no body>');
+        console.error(`PATCH original failed: ${response.status} ${response.statusText}`, text);
+
+        // Fallback: create a new follow-up message
+        response = await fetch(webhookBase, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        });
+
+        if (!response.ok) {
+          const fallbackText = await response.text().catch(() => '<no body>');
+          console.error(`Fallback POST failed: ${response.status} ${response.statusText}`, fallbackText);
+        }
       }
     } catch (error) {
       console.error('Error sending follow-up:', error);
