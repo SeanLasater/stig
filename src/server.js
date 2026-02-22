@@ -205,7 +205,13 @@ function handleTuneDifferentialCommand(interaction, env, ctx) {
       const chartUrl = `https://quickchart.io/chart?c=${encodeURIComponent(JSON.stringify(chartConfig))}`;
 
       // Send follow-up message via Discord webhook
-      const webhookUrl = `https://discord.com/api/v10/webhooks/${env.DISCORD_APPLICATION_ID}/${token}`;
+      const appId = env.DISCORD_APPLICATION_ID || interaction.application_id || data.application_id;
+      const webhookUrl = `https://discord.com/api/v10/webhooks/${appId}/${token}`;
+      if (!appId) {
+        console.error('Missing Discord application id (env.DISCORD_APPLICATION_ID or interaction.application_id). Cannot send follow-up.');
+        return;
+      }
+
       const response = await fetch(webhookUrl, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
