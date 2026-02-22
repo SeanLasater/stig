@@ -2,157 +2,54 @@
 // Run via: npm run register
 // This is a one-time setup step; commands persist in Discord after registration
 
-import dotenv from 'dotenv';  // Load environment variables from .dev.vars
-import process from 'node:process';  // Access process.env for credentials
-import { TIRE_CHOICES } from './downforceData.js';
-import { TRACK_CHOICES, CAR_CHOICES } from './transData.js';
+import dotenv from 'dotenv';
+import process from 'node:process';
+import { TUNEDOWNFORCE_COMMAND, TUNETRANSMISSION_COMMAND, TUNEDIFFERENTIAL_COMMAND } from './commands.js';
 
 /**
  * This file is meant to be run from the command line, and is not used by the
- * application server.  It's allowed to use node.js primitives, and only needs
+ * application server. It's allowed to use node.js primitives, and only needs
  * to be run once.
  */
 
-// Load environment variables from .dev.vars file into process.env
 dotenv.config({ path: '.dev.vars' });
 
-// Retrieve Discord bot credentials from environment variables
-const token = process.env.DISCORD_TOKEN;              // Bot's authentication token
-const applicationId = process.env.DISCORD_APPLICATION_ID;  // Discord App ID (bot ID)
+const token = process.env.DISCORD_TOKEN;
+const applicationId = process.env.DISCORD_APPLICATION_ID;
 
-// Validate that required environment variables are set before attempting registration
 if (!token) {
   throw new Error('The DISCORD_TOKEN environment variable is required.');
 }
 if (!applicationId) {
-  throw new Error(
-    'The DISCORD_APPLICATION_ID environment variable is required.',
-  );
+  throw new Error('The DISCORD_APPLICATION_ID environment variable is required.');
 }
 
-// Command definitions with lowercase names (matches Discord API requirements)
-// Name must be lowercase alphanumeric and hyphens only
-const TUNEDOWNFORCE_COMMAND = {
-  name: 'tune-downforce',  // Lowercase command name as typed by user: /tune-downforce
-  description: 'GT7 grip-optimized downforce & natural frequency',  // Shown in Discord command picker
-  options: [  // Parameters users can pass to the command
-    {
-      name: 'weight',                                 // Parameter name
-      description: 'Car weight in pounds (lbs)',      // Help text
-      type: 10,                                        // 10 = number type
-      required: true,                                  // Must provide value
-      min_value: 1000,                                 // Constraint: minimum weight
-      max_value: 5000,                                 // Constraint: maximum weight
-    },
-    {
-      name: 'front',                                   // Parameter name for weight distribution %
-      description: 'Front weight distribution % (e.g. 54)',
-      type: 10,                                        // 10 = number type
-      required: true,
-      min_value: 30,                                   // Minimum safe front weight distribution
-      max_value: 70,                                   // Maximum safe front weight distribution
-    },
-    {
-      name: 'tire',                                    // Parameter name for tire selection
-      description: 'Tire compound',
-      type: 3,                                         // 3 = string with predefined choices
-      required: true,
-      choices: TIRE_CHOICES,
-    },
-  ],
-};
-
-const TUNETRANSMISSION_COMMAND = {
-  name: 'tune-transmission',                  
-  description: 'Tune transmission based on track and car.',
-  options: [  
-    {
-      name: 'track',                                 
-      description: 'Track name (e.g. "Monza")',
-      type: 3, // string
-      required: true,
-      choices: TRACK_CHOICES,
-    },
-    {
-      name: 'car',                                   
-      description: 'Car name (e.g. "Porsche 911 GT3 RS")',
-      type: 3, // string
-      choices: CAR_CHOICES,
-    },
-  ],
-};
-
-const TUNEDIFFERENTIAL_COMMAND = {
-  name: 'tune-differential',
-  description: 'Predict LSD behavior quadrants for RWD based on initial torque and acceleration sensitivity.',
-  options: [
-    {
-      name: 'initial_torque',
-      description: 'Initial torque (0-60 scale, where 0 is low and 60 is high)',
-      type: 10, // number
-      required: true,
-      min_value: 0,
-      max_value: 60,
-    },
-    {
-      name: 'acceleration_sensitivity',
-      description: 'Acceleration sensitivity (0-60 scale, where 0 is low and 60 is high)',
-      type: 10, // number
-      required: true,
-      min_value: 0,
-      max_value: 60,
-    },
-    {
-      name: 'braking_sensitivity',
-      description: 'Braking sensitivity (0-60 scale, where 0 is low and 60 is high)',
-      type: 10, // number
-      required: true,
-      min_value: 0,
-      max_value: 60,
-    }
-  ],
-};
-
-/**
- * Register all commands globally.  This can take o(minutes), so wait until
- * you're sure these are the commands you want.
- */
-// Construct URL for Discord's command registration API endpoint
+// Register all commands globally with Discord API
 const url = `https://discord.com/api/v10/applications/${applicationId}/commands`;
 
-// Send PUT request to Discord API with command definitions
-// PUT replaces all registered commands (adds new + updates existing + removes unlisted ones)
 const response = await fetch(url, {
   headers: {
-    'Content-Type': 'application/json',              // Indicate JSON payload
-    Authorization: `Bot ${token}`,                   // Bot authentication header
+    'Content-Type': 'application/json',
+    Authorization: `Bot ${token}`,
   },
-  method: 'PUT',  // PUT = register/update all commands at once
-  body: JSON.stringify([TUNEDOWNFORCE_COMMAND, TUNETRANSMISSION_COMMAND, TUNEDIFFERENTIAL_COMMAND]),  // Array of commands to register
+  method: 'PUT',
+  body: JSON.stringify([TUNEDOWNFORCE_COMMAND, TUNETRANSMISSION_COMMAND, TUNEDIFFERENTIAL_COMMAND]),
 });
 
-// Check if command registration succeeded
 if (response.ok) {
-  // Success: commands registered successfully
   console.log('Registered all commands');
-  // Parse response to show registration details
   const data = await response.json();
-  console.log(JSON.stringify(data, null, 2));  // Pretty-print registered command objects
+  console.log(JSON.stringify(data, null, 2));
 } else {
-  // Failure: Discord API returned an error
   console.error('Error registering commands');
-  // Build detailed error message including URL, status, and response body
   let errorText = `Error registering commands \n ${response.url}: ${response.status} ${response.statusText}`;
   try {
-    // Attempt to read error details from response body
     const error = await response.text();
     if (error) {
       errorText = `${errorText} \n\n ${error}`;
     }
   } catch (err) {
-    // If body reading fails, log that error
     console.error('Error reading body from request:', err);
   }
-  // Log full error details for debugging
   console.error(errorText);
 }

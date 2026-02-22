@@ -59,28 +59,28 @@ export const TUNETRANSMISSION_COMMAND = {
 // tune-differential
 export const TUNEDIFFERENTIAL_COMMAND = {
   name: 'tune-differential',
-  description: 'Plot LSD behavior quadrants.',
+  description: 'Plot LSD behavior quadrants for RWD tuning.',
   options: [
     {
-      name: 'Initial Torque',
-      description: 'Initial torque value (0-60)',
-      type: 10, // num
+      name: 'initial_torque',
+      description: 'Initial torque value (0-60 scale)',
+      type: 10,
       required: true,
       min_value: 0,
       max_value: 60,
     },
     {
-      name: 'Acceleration Sensitivity',
-      description: 'Acceleration sensitivity value (0-60)',
-      type: 10, // num
+      name: 'acceleration_sensitivity',
+      description: 'Acceleration sensitivity value (0-60 scale)',
+      type: 10,
       required: true,
       min_value: 0,
       max_value: 60,
     },
     {
-      name: 'Braking Sensitivity',
-      description: 'Braking sensitivity value (0-60)',
-      type: 10, // num
+      name: 'braking_sensitivity',
+      description: 'Braking sensitivity value (0-60 scale)',
+      type: 10,
       required: true,
       min_value: 0,
       max_value: 60,
