@@ -59,7 +59,7 @@ export const TUNETRANSMISSION_COMMAND = {
 // tune-differential
 export const TUNEDIFFERENTIAL_COMMAND = {
   name: 'tune-differential',
-  description: 'Plot LSD behavior quadrants for RWD tuning.',
+  description: 'Analyze diff tuning and return sliding‑scale behaviour profiles.',
   options: [
     {
       name: 'initial_torque',

@@ -9,6 +9,7 @@ import {
   verifyKey,
 } from 'discord-interactions';
 import { TUNEDOWNFORCE_COMMAND, TUNETRANSMISSION_COMMAND, TUNEDIFFERENTIAL_COMMAND } from './commands.js';
+import { analyzeDifferentialTuning } from './diffScatter.js';
 import { TRACK_CHOICES } from './transData.js';
 import { CARS } from './cars.js';
 import { calculateGripTune } from './tuning.js';
@@ -75,140 +76,79 @@ function handleTuneDifferentialCommand(interaction, env, ctx) {
   const accelerationSensitivity = options.acceleration_sensitivity;
   const brakingSensitivity = options.braking_sensitivity;
 
-  // Create promise for follow-up chart generation
+  // run the analytic helper to get a title, description, and normalized scales
+  const analysis = analyzeDifferentialTuning({
+    accelerationSensitivity,
+    initialTorque,
+    brakingSensitivity,
+  });
+
+  // Create promise for follow-up chart generation (sliding scales)
   const followUpPromise = (async () => {
     try {
-      // Determine user's behavioral quadrant (midpoint is 30 for 0-60 range)
+      // choose a colour based on quadrant thresholds (preserves old palette)
       const isHighAccel = accelerationSensitivity > 30;
       const isHighBraking = brakingSensitivity > 30;
-      let quadrantLabel = '';
-      let quadrantDescription = '';
       let embedColor = 0xffd700;
+      if (isHighAccel && isHighBraking) embedColor = 0xff6b00;
+      else if (isHighAccel && !isHighBraking) embedColor = 0xff0000;
+      else if (!isHighAccel && isHighBraking) embedColor = 0x0066ff;
+      else embedColor = 0xffff00;
 
-      if (isHighAccel && isHighBraking) {
-        quadrantLabel = 'Locked & Stable';
-        quadrantDescription = 'High lock both accel & braking • Predictable but prone to oversteer on throttle • Best for grip racing';
-        embedColor = 0xff6b00;
-      } else if (isHighAccel && !isHighBraking) {
-        quadrantLabel = 'Oversteer Prone';
-        quadrantDescription = 'Strong accel lock, minimal braking lock • Rear slides freely under braking • Aggressive acceleration bias';
-        embedColor = 0xff0000;
-      } else if (!isHighAccel && isHighBraking) {
-        quadrantLabel = 'Understeer Prone';
-        quadrantDescription = 'Minimal accel lock, strong braking lock • Front-heavy under braking • Conservative for smooth handling';
-        embedColor = 0x0066ff;
-      } else {
-        quadrantLabel = 'Free Diff';
-        quadrantDescription = 'Minimal lock both directions • Loose, drifty feel • Extreme lock-to-lock behavior';
-        embedColor = 0xffff00;
-      }
+      // build QuickChart config for three horizontal bars representing the scales
+      const labels = [
+        `${analysis.scales.gripDrift.leftLabel} ↔ ${analysis.scales.gripDrift.rightLabel}`,
+        `${analysis.scales.underOver.leftLabel} ↔ ${analysis.scales.underOver.rightLabel}`,
+        `${analysis.scales.controlPlay.leftLabel} ↔ ${analysis.scales.controlPlay.rightLabel}`,
+      ];
+      const values = [
+        analysis.scales.gripDrift.value,
+        analysis.scales.underOver.value,
+        analysis.scales.controlPlay.value,
+      ];
 
-      // Create detailed QuickChart with all annotations
       const chartConfig = {
-        type: 'scatter',
+        type: 'bar',
         data: {
+          labels,
           datasets: [
-            // Vertical line at x=30 (accel midpoint)
             {
-              label: 'Accel Mid',
-              type: 'line',
-              data: [{ x: 30, y: 0 }, { x: 30, y: 60 }],
-              borderColor: 'rgba(200, 200, 200, 0.95)',
-              borderWidth: 3,
-              fill: false,
-              pointRadius: 0,
-              showLine: true,
-              borderDash: [6, 6],
-            },
-            // Horizontal line at y=30 (braking midpoint)
-            {
-              label: 'Braking Mid',
-              type: 'line',
-              data: [{ x: 0, y: 30 }, { x: 60, y: 30 }],
-              borderColor: 'rgba(200, 200, 200, 0.95)',
-              borderWidth: 3,
-              fill: false,
-              pointRadius: 0,
-              showLine: true,
-              borderDash: [6, 6],
-            },
-            // User's tuning point
-            {
-              label: 'Your Tuning',
-              type: 'scatter',
-              data: [
-                {
-                  x: accelerationSensitivity,
-                  y: brakingSensitivity,
-                },
-              ],
-              pointRadius: 10,
-              pointBackgroundColor: 'rgba(255, 215, 0, 1)',
-              pointBorderColor: 'rgba(255, 255, 255, 1)',
-              pointBorderWidth: 3,
+              label: 'Scale',
+              data: values,
+              backgroundColor: '#0066ff',
             },
           ],
         },
         options: {
-          plugins: {
-            legend: { display: false },
-            title: { display: true, text: 'LSD Behavior Quadrants' },
-            datalabels: {
-              display: false,
-            },
-            annotation: {
-              annotations: {
-                topRight: {
-                  type: 'label',
-                  xValue: 45,
-                  yValue: 45,
-                  content: ['Locked &', 'Stable'],
-                },
-                bottomRight: {
-                  type: 'label',
-                  xValue: 45,
-                  yValue: 15,
-                  content: ['Oversteer', 'Prone'],
-                },
-                topLeft: {
-                  type: 'label',
-                  xValue: 15,
-                  yValue: 45,
-                  content: ['Understeer', 'Prone'],
-                },
-                bottomLeft: {
-                  type: 'label',
-                  xValue: 15,
-                  yValue: 15,
-                  content: ['Free', 'Diff'],
-                },
-              },
-            },
-          },
+          indexAxis: 'y',
           scales: {
             x: {
-              title: { display: true, text: 'Acceleration Sensitivity (0-60)' },
               min: 0,
-              max: 60,
-              ticks: { stepSize: 10 },
+              max: 1,
+              ticks: {
+                stepSize: 0.25,
+                callback: val => `${Math.round(val * 100)}%`,
+              },
+              title: { display: true, text: 'Normalized' },
             },
             y: {
-              title: { display: true, text: 'Braking Sensitivity (0-60)' },
-              min: 0,
-              max: 60,
-              ticks: { stepSize: 10 },
+              ticks: { font: { size: 10 } },
             },
+          },
+          plugins: {
+            legend: { display: false },
+            title: { display: true, text: 'Differential Tuning Scales' },
           },
         },
       };
 
-      // Create short QuickChart URL via POST to avoid overly long URLs (Discord limit 2048)
+      // use QuickChart again to convert this config to a hosted url
       let chartUrl;
       try {
         const qcResp = await fetch('https://quickchart.io/chart/create', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ chart: chartConfig, width: 800, height: 450, backgroundColor: 'transparent' }),
+          body: JSON.stringify({ chart: chartConfig, width: 640, height: 300, backgroundColor: 'transparent' }),
         });
         const qcJson = await qcResp.json().catch(() => ({}));
         if (qcResp.ok && qcJson.url) {
@@ -227,7 +167,27 @@ function handleTuneDifferentialCommand(interaction, env, ctx) {
         chartUrl = null;
       }
 
-      // Send follow-up message via Discord webhook
+      // build embed using analysis output
+      const embed = {
+        title: analysis.title,
+        description: analysis.description,
+        color: embedColor,
+        fields: [
+          { name: 'Initial Torque', value: `${initialTorque.toFixed(1)}`, inline: true },
+          { name: 'Accel Sensitivity', value: `${accelerationSensitivity.toFixed(1)}`, inline: true },
+          { name: 'Braking Sensitivity', value: `${brakingSensitivity.toFixed(1)}`, inline: true },
+        ],
+        footer: { text: 'Values normalized to 0–1 scale' },
+        timestamp: new Date().toISOString(),
+      };
+
+      if (chartUrl) {
+        embed.image = { url: chartUrl };
+      } else {
+        embed.footer.text += ' (chart omitted)';
+      }
+
+      // send the embed via webhook patch/post as before
       const appId = env.DISCORD_APPLICATION_ID || interaction.application_id || data.application_id;
       if (!appId) {
         console.error('Missing Discord application id (env.DISCORD_APPLICATION_ID or interaction.application_id). Cannot send follow-up.');
@@ -235,25 +195,6 @@ function handleTuneDifferentialCommand(interaction, env, ctx) {
       }
 
       const webhookBase = `https://discord.com/api/v10/webhooks/${appId}/${token}`;
-      const embed = {
-        title: 'LSD Behavior Analysis',
-        description: `**${quadrantLabel}**\n${quadrantDescription}`,
-        color: embedColor,
-        fields: [
-          { name: 'Initial Torque', value: `${initialTorque.toFixed(1)}`, inline: true },
-          { name: 'Accel Sensitivity', value: `${accelerationSensitivity.toFixed(1)}`, inline: true },
-          { name: 'Braking Sensitivity', value: `${brakingSensitivity.toFixed(1)}`, inline: true },
-        ],
-        footer: { text: 'Gold dot = your tuning placement' },
-        timestamp: new Date().toISOString(),
-      };
-
-      if (chartUrl) {
-        embed.image = { url: chartUrl };
-      } else {
-        embed.footer.text += ' (chart omitted: URL too long)';
-      }
-
       const payload = { embeds: [embed] };
 
       // Try updating the original deferred response first
@@ -265,17 +206,13 @@ function handleTuneDifferentialCommand(interaction, env, ctx) {
       });
 
       if (!response.ok) {
-        // Log patch failure and body, then fall back to POSTing a follow-up
         const text = await response.text().catch(() => '<no body>');
         console.error(`PATCH original failed: ${response.status} ${response.statusText}`, text);
-
-        // Fallback: create a new follow-up message
         response = await fetch(webhookBase, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(payload),
         });
-
         if (!response.ok) {
           const fallbackText = await response.text().catch(() => '<no body>');
           console.error(`Fallback POST failed: ${response.status} ${response.statusText}`, fallbackText);
