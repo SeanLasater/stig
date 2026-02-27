@@ -190,6 +190,8 @@ function handleTuneDifferentialCommand(interaction, env, ctx) {
 // This function processes the /tune-transmission command, looks up track and car data, and returns a transmission tuning embed.
 // ──────────────────────────────────────────────────────────────
 
+/*
+
 let transmissionTune = null; 
 
 function handleTuneTransmissionCommand(trackName) {
@@ -231,6 +233,8 @@ return new JsonResponse({
     }],
   },
 });
+
+*/
 
 // ──────────────────────────────────────────────────────────────
 // AUTOCOMPLETE INTERACTION HANDLER
