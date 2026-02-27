@@ -325,6 +325,88 @@ export function analyzeDifferentialTuning(tuning) {
   };
 }
 
+// Helper that draws one horizontal bar with a two‑colour gradient and a
+// vertical marker showing `value` (0…1).  The labels are drawn above the bar.
+function drawScaleBar(ctx, x, y, width, height, value, leftLabel, rightLabel) {
+  // gradient from red (left) to green (right) – feel free to adjust colours
+  const grad = ctx.createLinearGradient(x, y, x + width, y);
+  grad.addColorStop(0, '#ff4d4d');
+  grad.addColorStop(1, '#4dff4d');
+  ctx.fillStyle = grad;
+  ctx.fillRect(x, y, width, height);
+
+  // marker line
+  const markerX = x + Math.round(value * width);
+  ctx.fillStyle = '#000';
+  ctx.fillRect(markerX - 2, y, 4, height);
+
+  // labels
+  ctx.fillStyle = '#000';
+  ctx.font = '10px Arial';
+  ctx.textBaseline = 'bottom';
+  ctx.textAlign = 'left';
+  ctx.fillText(leftLabel, x + 2, y - 2);
+  ctx.textAlign = 'right';
+  ctx.fillText(rightLabel, x + width - 2, y - 2);
+}
+
+/**
+ * Combine the three sliding scales into a single image and return a PNG data url.
+ * Works in both browser (uses <canvas>) and Cloudflare Worker (OffscreenCanvas).
+ *
+ * @param {object} analysis result from `analyzeDifferentialTuning`
+ * @param {number} [width=400]
+ * @returns {Promise<string>} data url
+ */
+export async function createScalePoster(analysis, width = 400) {
+  const barHeight = 30;
+  const padding = 10;
+  const totalHeight = padding + 3 * (barHeight + padding);
+
+  let canvas = null;
+  if (typeof document !== 'undefined') {
+    canvas = document.createElement('canvas');
+  } else if (typeof OffscreenCanvas !== 'undefined') {
+    canvas = new OffscreenCanvas(width, totalHeight);
+  }
+  if (!canvas) {
+    throw new Error('Canvas API is not available in this environment');
+  }
+  canvas.width = width;
+  canvas.height = totalHeight;
+  const ctx = canvas.getContext('2d');
+
+  // white background
+  ctx.fillStyle = '#fff';
+  ctx.fillRect(0, 0, width, totalHeight);
+
+  const scales = [
+    analysis.scales.gripDrift,
+    analysis.scales.underOver,
+    analysis.scales.controlPlay,
+  ];
+
+  for (let i = 0; i < scales.length; i++) {
+    const s = scales[i];
+    const y = padding + i * (barHeight + padding);
+    drawScaleBar(ctx, 0, y, width, barHeight, s.value, s.leftLabel, s.rightLabel);
+  }
+
+  // convert to data url
+  if (canvas.convertToBlob) {
+    const blob = await canvas.convertToBlob();
+    const buf = new Uint8Array(await blob.arrayBuffer());
+    let binary = '';
+    buf.forEach((b) => {
+      binary += String.fromCharCode(b);
+    });
+    return 'data:image/png;base64,' + btoa(binary);
+  } else if (canvas.toDataURL) {
+    return canvas.toDataURL('image/png');
+  }
+  throw new Error('Unable to convert canvas to data URL');
+}
+
 /**
  * Draw a single horizontal sliding‑scale bar and return the canvas.
  */
@@ -332,8 +414,8 @@ export function createSlidingScaleCanvas(
   value,
   leftLabel,
   rightLabel,
-  width = 300,
-  height = 30
+  width = 350,
+  height = 60
 ) {
   const canvas = typeof document !== 'undefined' ? document.createElement('canvas') : null;
   if (!canvas) throw new Error('Canvas API is only available in browser environments');
@@ -341,29 +423,57 @@ export function createSlidingScaleCanvas(
   canvas.height = height;
   const ctx = canvas.getContext('2d');
 
-  // background
-  ctx.fillStyle = '#ffffff';
-  ctx.fillRect(0, 0, width, height);
+  // Bar dimensions
+  const barX = 40;
+  const barY = 28;
+  const barWidth = width - 2 * barX;
+  const barHeight = 16;
 
-  // bar background
-  const barHeight = height / 2;
-  const barY = (height - barHeight) / 2;
-  ctx.fillStyle = '#ddd';
-  ctx.fillRect(0, barY, width, barHeight);
+  // Draw gradient bar
+  const grad = ctx.createLinearGradient(barX, barY, barX + barWidth, barY);
+  grad.addColorStop(0, "#ff4d4d");    // red
+  grad.addColorStop(0.5, "#ffff66");  // yellow
+  grad.addColorStop(1, "#4dff4d");    // green
+  ctx.fillStyle = grad;
+  ctx.fillRect(barX, barY, barWidth, barHeight);
+  ctx.strokeStyle = "#888";
+  ctx.strokeRect(barX, barY, barWidth, barHeight);
 
-  // filled portion
-  const fillWidth = Math.round(value * width);
-  ctx.fillStyle = '#0066ff';
-  ctx.fillRect(0, barY, fillWidth, barHeight);
+  // Draw ticks and numbers
+  ctx.font = "10px Arial";
+  ctx.fillStyle = "#222";
+  ctx.textAlign = "center";
+  ctx.textBaseline = "top";
+  const numTicks = 10;
+  for (let i = 0; i <= numTicks; i++) {
+    const x = barX + (i / numTicks) * barWidth;
+    ctx.beginPath();
+    ctx.moveTo(x, barY + barHeight);
+    ctx.lineTo(x, barY + barHeight + 7);
+    ctx.strokeStyle = "#444";
+    ctx.lineWidth = 1;
+    ctx.stroke();
+    ctx.fillText(i, x, barY + barHeight + 8);
+  }
 
-  // labels
-  ctx.fillStyle = '#000';
-  ctx.font = '10px Arial';
-  ctx.textBaseline = 'middle';
-  ctx.textAlign = 'left';
-  ctx.fillText(leftLabel, 2, barY - 5);
-  ctx.textAlign = 'right';
-  ctx.fillText(rightLabel, width - 2, barY - 5);
+  // Draw pointer (triangle) above the bar
+  const pointerX = barX + value * barWidth;
+  const pointerY = barY - 6;
+  ctx.beginPath();
+  ctx.moveTo(pointerX, pointerY);
+  ctx.lineTo(pointerX - 7, pointerY - 12);
+  ctx.lineTo(pointerX + 7, pointerY - 12);
+  ctx.closePath();
+  ctx.fillStyle = "#222";
+  ctx.fill();
+
+  // Draw labels above bar
+  ctx.font = "bold 13px Arial";
+  ctx.textAlign = "left";
+  ctx.textBaseline = "bottom";
+  ctx.fillText(leftLabel, barX, barY - 18);
+  ctx.textAlign = "right";
+  ctx.fillText(rightLabel, barX + barWidth, barY - 18);
 
   return canvas;
 }
