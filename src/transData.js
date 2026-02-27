@@ -200,9 +200,3 @@ export const TRANSMISSION_TUNINGS = {
     gears: { '1st': 3.700, '2nd': 2.500, '3rd': 1.850, '4th': 1.350, '5th': 1.050, '6th': 0.850 }
   },
 };
-
-// Car choices for transmission tuning command
-export const CAR_CHOICES = [
-  { name: 'Porsche 911 GT3 RS', value: 'porsche_911_gt3_rs' },
-  { name: 'Ferrari 488 Pista', value: 'ferrari_488_pista' },
-];

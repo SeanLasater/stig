@@ -2,6 +2,10 @@
 // This file defines the HTTP request handler, command processing logic, and physics calculations for the tune-downforce command.
 
 // It uses the itty-router library for routing and discord-interactions for request verification and response formatting.
+
+// ──────────────────────────────────────────────────────────────
+// IMPORTS
+// ──────────────────────────────────────────────────────────────
 import { AutoRouter } from 'itty-router';
 
 import {
@@ -17,16 +21,16 @@ import {
 } from './commands.js';
 
 import { analyzeDifferentialTuning } from './diffData.js';
-import { TRACK_CHOICES } from './transData.js';
+import { TRACK_CHOICES, TRANSMISSION_TUNINGS } from './transData.js';
 import { CARS } from './cars.js';
 import { calculateGripTune } from './tuning.js';
 import { JsonResponse } from './utils.js';
 
 // ──────────────────────────────────────────────────────────────
-// Handler functions for Discord slash commands
+// TUNE DOWNFORCE COMMAND HANDLER
+// This function processes the /tune-downforce command, performs physics calculations, and returns a formatted response embed.
 // ──────────────────────────────────────────────────────────────
 
-// Handler for /tune-downforce command
 function handleTuneDownforceCommand(interaction) {
   const { data } = interaction;
   const options = Object.fromEntries((data.options ?? []).map(opt => [opt.name, opt.value]));
@@ -75,7 +79,11 @@ function handleTuneDownforceCommand(interaction) {
   });
 }
 
-// Handler for /tune-differential command
+// ──────────────────────────────────────────────────────────────
+// TUNE DIFFERENTIAL COMMAND HANDLER
+// This function processes the /tune-differential command, analyzes the tuning characteristics, and returns a detailed embed with insights and sliding-scale metrics.
+// ──────────────────────────────────────────────────────────────
+
 function handleTuneDifferentialCommand(interaction, env, ctx) {
   const { data, token } = interaction;
   const options = Object.fromEntries((data.options ?? []).map(opt => [opt.name, opt.value]));
@@ -120,13 +128,13 @@ function handleTuneDifferentialCommand(interaction, env, ctx) {
           { name: `${analysis.scales.gripDrift.leftLabel} / ${analysis.scales.gripDrift.rightLabel}`,
             value: `\`\`\`${scaleToNum(analysis.scales.gripDrift.value)}\`\`\``, inline: false },
           { name: `${analysis.scales.underOver.leftLabel} / ${analysis.scales.underOver.rightLabel}`,
-            value: `\`\`\`${scaleToNum(analysis.scales.underOver.value)}\`\`\``, inline: true },
+            value: `\`\`\`${scaleToNum(analysis.scales.underOver.value)}\`\`\``, inline: false },
           { name: `${analysis.scales.controlPlay.leftLabel} / ${analysis.scales.controlPlay.rightLabel}`,
             value: `\`\`\`${scaleToNum(analysis.scales.controlPlay.value)}\`\`\``, inline: false },
           { name: `${analysis.scales.brakeLock.leftLabel} / ${analysis.scales.brakeLock.rightLabel}`,
-            value: `\`\`\`${scaleToNum(analysis.scales.brakeLock.value)}\`\`\``, inline: true },
+            value: `\`\`\`${scaleToNum(analysis.scales.brakeLock.value)}\`\`\``, inline: false },
         ],
-        footer: { text: 'Scale: -10 (left) to 10 (right)' },
+        footer: { text: 'Key: Grip -10 / 10 Drift' },
         timestamp: new Date().toISOString(),
       };
 
@@ -177,7 +185,47 @@ function handleTuneDifferentialCommand(interaction, env, ctx) {
   });
 }
 
-// Handler for autocomplete interactions (user typing in a slash command option)
+// ──────────────────────────────────────────────────────────────
+// TUNE TRANSMISSION COMMAND HANDLER
+// This function processes the /tune-transmission command, looks up track and car data, and returns a transmission tuning embed.
+// ──────────────────────────────────────────────────────────────
+function handleTuneTransmissionCommand(interaction) {
+  const { data } = interaction;
+  const options = Object.fromEntries((data.options ?? []).map(opt => [opt.name, opt.value]));
+  const track = options.track;
+  const car = options.car;
+
+  let result = (TRANSMISSION_TUNINGS[track] || null);
+
+  if (!result) {
+    return new JsonResponse({
+      type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
+      data: {
+        embeds: [{
+          title: 'Track Not Found',
+          description: `No transmission tuning data found for track "${track}".`,
+          color: 0xff0000,
+        }],
+      },
+    });
+  }
+
+  return new JsonResponse({
+    type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
+    data: {
+      embeds: [{
+        title: `Transmission Tuning for ${track.replace(/_/g, ' ')}`,
+        description: `Car: ${car.replace(/_/g, ' ')}\n\nFinal Drive Ratio: ${result.finalDrive}\n\nGear Ratios:\n1st: ${result.gears['1st']}\n2nd: ${result.gears['2nd']}\n3rd: ${result.gears['3rd']}\n4th: ${result.gears['4th']}\n5th: ${result.gears['5th']}\n6th: ${result.gears['6th']}`,
+        color: 0x00ff00,
+      }],
+    },
+  });
+}
+
+// ──────────────────────────────────────────────────────────────
+// AUTOCOMPLETE INTERACTION HANDLER
+// ──────────────────────────────────────────────────────────────
+
 function handleAutocomplete(interaction) {
   const { data } = interaction;
   const focusedOption = data.options?.find(opt => opt.focused);
@@ -235,6 +283,9 @@ function handleAutocomplete(interaction) {
     data: { choices: [] },
   });
 }
+// ──────────────────────────────────────────────────────────────
+// ROUTER AND SERVER SETUP
+// ──────────────────────────────────────────────────────────────
 
 // Create router to handle HTTP requests; directs GET/POST to appropriate handlers
 const router = AutoRouter();
