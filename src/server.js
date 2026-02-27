@@ -189,8 +189,11 @@ function handleTuneDifferentialCommand(interaction, env, ctx) {
 // TUNE TRANSMISSION COMMAND HANDLER
 // This function processes the /tune-transmission command, looks up track and car data, and returns a transmission tuning embed.
 // ──────────────────────────────────────────────────────────────
+
+let transmissionTune = null; 
+
 function handleTuneTransmissionCommand(trackName) {
-  const tune = TRANSMISSION_TUNINGS[trackName];
+  const tune = TRANSMISSION_TUNINGS[TRACK_CHOICES.find(track => track.value === trackName)?.value];
   if (tune) {
     transmissionTune = {
       finalDrive: tune.finalDrive,
@@ -203,34 +206,31 @@ function handleTuneTransmissionCommand(trackName) {
   }
 }
 
-export { transmissionTune };
+let result = calculateTransmissionTune(track);
 
-  let result = calculateTransmissionTune(track);
-
-  if (!result) {
-    return new JsonResponse({
-      type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
-      data: {
-        embeds: [{
-          title: 'Track Not Found',
-          description: `No transmission tuning data found for track "${track}".`,
-          color: 0xff0000,
-        }],
-      },
-    });
-  }
-
+if (!result) {
   return new JsonResponse({
     type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
     data: {
       embeds: [{
-        title: `Transmission Tuning for ${track.replace(/_/g, ' ')}`,
-        description: `Car: ${car.replace(/_/g, ' ')}\n\nFinal Drive Ratio: ${transmissionTune.finalDrive}\n\nGear Ratios:\n1st: ${transmissionTune.gears['1st']}\n2nd: ${transmissionTune.gears['2nd']}\n3rd: ${transmissionTune.gears['3rd']}\n4th: ${transmissionTune.gears['4th']}\n5th: ${transmissionTune.gears['5th']}\n6th: ${transmissionTune.gears['6th']}`,
-        color: 0x00ff00,
+        title: 'Track Not Found',
+        description: `No transmission tuning data found for track "${track}".`,
+        color: 0xff0000,
       }],
     },
   });
 }
+
+return new JsonResponse({
+  type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
+   data: {
+    embeds: [{
+      title: `Transmission Tuning for ${track.replace(/_/g, ' ')}`,
+      description: `Car: ${car.replace(/_/g, ' ')}\n\nFinal Drive Ratio: ${transmissionTune.finalDrive}\n\nGear Ratios:\n1st: ${transmissionTune.gears['1st']}\n2nd: ${transmissionTune.gears['2nd']}\n3rd: ${transmissionTune.gears['3rd']}\n4th: ${transmissionTune.gears['4th']}\n5th: ${transmissionTune.gears['5th']}\n6th: ${transmissionTune.gears['6th']}`,
+      color: 0x00ff00,
+    }],
+  },
+});
 
 // ──────────────────────────────────────────────────────────────
 // AUTOCOMPLETE INTERACTION HANDLER
