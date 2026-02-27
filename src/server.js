@@ -3,14 +3,20 @@
 
 // It uses the itty-router library for routing and discord-interactions for request verification and response formatting.
 import { AutoRouter } from 'itty-router';
+
 import {
   InteractionResponseType,
   InteractionType,
   verifyKey,
 } from 'discord-interactions';
-import { TUNEDOWNFORCE_COMMAND, TUNETRANSMISSION_COMMAND, TUNEDIFFERENTIAL_COMMAND } from './commands.js';
-import { analyzeDifferentialTuning } from './diffScatter.js';
-import { makeGaugeChartConfig } from './diffScatter.js';
+
+import { 
+  TUNEDOWNFORCE_COMMAND, 
+  TUNETRANSMISSION_COMMAND, 
+  TUNEDIFFERENTIAL_COMMAND 
+} from './commands.js';
+
+import { analyzeDifferentialTuning } from './diffData.js';
 import { TRACK_CHOICES } from './transData.js';
 import { CARS } from './cars.js';
 import { calculateGripTune } from './tuning.js';
@@ -111,14 +117,14 @@ function handleTuneDifferentialCommand(interaction, env, ctx) {
           { name: 'Initial Torque', value: `${initialTorque.toFixed(1)}`, inline: true },
           { name: 'Accel Sensitivity', value: `${accelerationSensitivity.toFixed(1)}`, inline: true },
           { name: 'Braking Sensitivity', value: `${brakingSensitivity.toFixed(1)}`, inline: true },
-          { name: `${analysis.scales.gripDrift.leftLabel} ↔ ${analysis.scales.gripDrift.rightLabel}`,
-            value: `${scaleToNum(analysis.scales.gripDrift.value)}`, inline: false },
-          { name: `${analysis.scales.underOver.leftLabel} ↔ ${analysis.scales.underOver.rightLabel}`,
-            value: `${scaleToNum(analysis.scales.underOver.value)}`, inline: false },
-          { name: `${analysis.scales.controlPlay.leftLabel} ↔ ${analysis.scales.controlPlay.rightLabel}`,
-            value: `${scaleToNum(analysis.scales.controlPlay.value)}`, inline: false },
-          { name: `${analysis.scales.brakeLock.leftLabel} ↔ ${analysis.scales.brakeLock.rightLabel}`,
-            value: `${scaleToNum(analysis.scales.brakeLock.value)}`, inline: false },
+          { name: `${analysis.scales.gripDrift.leftLabel} / ${analysis.scales.gripDrift.rightLabel}`,
+            value: `\`\`\`${scaleToNum(analysis.scales.gripDrift.value)}\`\`\``, inline: false },
+          { name: `${analysis.scales.underOver.leftLabel} / ${analysis.scales.underOver.rightLabel}`,
+            value: `\`\`\`${scaleToNum(analysis.scales.underOver.value)}\`\`\``, inline: false },
+          { name: `${analysis.scales.controlPlay.leftLabel} / ${analysis.scales.controlPlay.rightLabel}`,
+            value: `\`\`\`${scaleToNum(analysis.scales.controlPlay.value)}\`\`\``, inline: false },
+          { name: `${analysis.scales.brakeLock.leftLabel} / ${analysis.scales.brakeLock.rightLabel}`,
+            value: `\`\`\`${scaleToNum(analysis.scales.brakeLock.value)}\`\`\``, inline: false },
         ],
         footer: { text: 'Scale: -10 (left) to 10 (right)' },
         timestamp: new Date().toISOString(),
