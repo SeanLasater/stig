@@ -10,7 +10,7 @@ import {
 } from 'discord-interactions';
 import { TUNEDOWNFORCE_COMMAND, TUNETRANSMISSION_COMMAND, TUNEDIFFERENTIAL_COMMAND } from './commands.js';
 import { analyzeDifferentialTuning } from './diffScatter.js';
-import { makeCombinedGaugeChartConfig } from './diffScatter.js';
+import { makeGaugeChartConfig } from './diffScatter.js';
 import { TRACK_CHOICES } from './transData.js';
 import { CARS } from './cars.js';
 import { calculateGripTune } from './tuning.js';
@@ -84,7 +84,7 @@ function handleTuneDifferentialCommand(interaction, env, ctx) {
     brakingSensitivity,
   });
 
-  // Create promise for follow-up chart generation (gauge chart)
+  // Create promise for follow-up chart generation (three gauge charts)
   const followUpPromise = (async () => {
     try {
       // choose a colour based on quadrant thresholds (preserves old palette)
@@ -96,32 +96,46 @@ function handleTuneDifferentialCommand(interaction, env, ctx) {
       else if (!isHighAccel && isHighBraking) embedColor = 0x0066ff;
       else embedColor = 0xffff00;
 
-      // Build combined gauge chart config
-      const chartConfig = makeCombinedGaugeChartConfig(analysis);
+      // Prepare three gauge chart configs
+      const gaugeConfigs = [
+        makeGaugeChartConfig(
+          analysis.scales.gripDrift.value,
+          analysis.scales.gripDrift.leftLabel,
+          analysis.scales.gripDrift.rightLabel,
+          '#4dff4d'
+        ),
+        makeGaugeChartConfig(
+          analysis.scales.underOver.value,
+          analysis.scales.underOver.leftLabel,
+          analysis.scales.underOver.rightLabel,
+          '#ffb84d'
+        ),
+        makeGaugeChartConfig(
+          analysis.scales.controlPlay.value,
+          analysis.scales.controlPlay.leftLabel,
+          analysis.scales.controlPlay.rightLabel,
+          '#4da6ff'
+        ),
+      ];
 
-      // use QuickChart to convert this config to a hosted url
-      let chartUrl;
-      try {
-        const qcResp = await fetch('https://quickchart.io/chart/create', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ chart: chartConfig, width: 400, height: 360, backgroundColor: 'transparent' }),
-        });
-        const qcJson = await qcResp.json().catch(() => ({}));
-        if (qcResp.ok && qcJson.url) {
-          chartUrl = qcJson.url;
-        } else {
-          console.error('QuickChart create failed', qcResp.status, qcResp.statusText, qcJson);
-          chartUrl = `https://quickchart.io/chart?c=${encodeURIComponent(JSON.stringify(chartConfig))}`;
+      // Generate three QuickChart URLs
+      const chartUrls = [];
+      for (let i = 0; i < gaugeConfigs.length; i++) {
+        try {
+          const qcResp = await fetch('https://quickchart.io/chart/create', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ chart: gaugeConfigs[i], width: 200, height: 120, backgroundColor: 'transparent' }),
+          });
+          const qcJson = await qcResp.json().catch(() => ({}));
+          if (qcResp.ok && qcJson.url) {
+            chartUrls.push(qcJson.url);
+          } else {
+            chartUrls.push(null);
+          }
+        } catch (err) {
+          chartUrls.push(null);
         }
-      } catch (err) {
-        console.error('QuickChart create error', err);
-        chartUrl = `https://quickchart.io/chart?c=${encodeURIComponent(JSON.stringify(chartConfig))}`;
-      }
-
-      if (chartUrl.length > 2048) {
-        console.error('Generated chart URL exceeds Discord length limit; omitting image. URL length:', chartUrl.length);
-        chartUrl = null;
       }
 
       // build embed using analysis output
@@ -138,11 +152,12 @@ function handleTuneDifferentialCommand(interaction, env, ctx) {
         timestamp: new Date().toISOString(),
       };
 
-      if (chartUrl) {
-        embed.image = { url: chartUrl };
-      } else {
-        embed.footer.text += ' (chart omitted)';
-      }
+      // Add each gauge as an embed image (Discord only shows the first, so add as fields with image URLs)
+      embed.fields.push(
+        { name: `${analysis.scales.gripDrift.leftLabel} ↔ ${analysis.scales.gripDrift.rightLabel}`, value: chartUrls[0] ? `![gauge](${chartUrls[0]})` : 'Image unavailable', inline: false },
+        { name: `${analysis.scales.underOver.leftLabel} ↔ ${analysis.scales.underOver.rightLabel}`, value: chartUrls[1] ? `![gauge](${chartUrls[1]})` : 'Image unavailable', inline: false },
+        { name: `${analysis.scales.controlPlay.leftLabel} ↔ ${analysis.scales.controlPlay.rightLabel}`, value: chartUrls[2] ? `![gauge](${chartUrls[2]})` : 'Image unavailable', inline: false },
+      );
 
       // send the embed via webhook patch/post as before
       const appId = env.DISCORD_APPLICATION_ID || interaction.application_id || data.application_id;

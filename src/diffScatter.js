@@ -1,91 +1,27 @@
-// Helper to generate a QuickChart config for three gauges in one image
-export function makeCombinedGaugeChartConfig(analysis) {
-  // Each gauge: value, leftLabel, rightLabel, color
-  const gauges = [
-    {
-      value: analysis.scales.gripDrift.value,
-      left: analysis.scales.gripDrift.leftLabel,
-      right: analysis.scales.gripDrift.rightLabel,
-      color: '#4dff4d',
-      y: 60,
-      label: 'Grip vs Drift',
-    },
-    {
-      value: analysis.scales.underOver.value,
-      left: analysis.scales.underOver.leftLabel,
-      right: analysis.scales.underOver.rightLabel,
-      color: '#ffb84d',
-      y: 180,
-      label: 'Understeer vs Oversteer',
-    },
-    {
-      value: analysis.scales.controlPlay.value,
-      left: analysis.scales.controlPlay.leftLabel,
-      right: analysis.scales.controlPlay.rightLabel,
-      color: '#4da6ff',
-      y: 300,
-      label: 'Playful vs Controllable',
-    },
-  ];
 
-  // Compose a QuickChart config with three half-doughnuts using Chart.js v3+ scriptable options
+// Helper to generate a QuickChart config for a single gauge (half-doughnut)
+export function makeGaugeChartConfig(value, leftLabel, rightLabel, color) {
   return {
-    type: 'chart',
-    data: {},
-    options: {},
-    plugins: [
-      {
-        id: 'multiGauge',
-        afterDraw: function(chart) {
-          const ctx = chart.ctx;
-          gauges.forEach((g, i) => {
-            // Draw gauge arc
-            const cx = chart.width / 2;
-            const cy = g.y;
-            const r = 50;
-            const start = Math.PI;
-            const end = Math.PI + Math.PI * g.value;
-            ctx.save();
-            ctx.lineWidth = 18;
-            ctx.strokeStyle = g.color;
-            ctx.beginPath();
-            ctx.arc(cx, cy, r, start, end, false);
-            ctx.stroke();
-            ctx.lineWidth = 18;
-            ctx.strokeStyle = '#eee';
-            ctx.beginPath();
-            ctx.arc(cx, cy, r, end, Math.PI * 2, false);
-            ctx.stroke();
-            ctx.restore();
-            // Draw pointer
-            const pointerAngle = start + Math.PI * g.value;
-            const px = cx + r * Math.cos(pointerAngle);
-            const py = cy + r * Math.sin(pointerAngle);
-            ctx.save();
-            ctx.fillStyle = '#222';
-            ctx.beginPath();
-            ctx.moveTo(px, py);
-            ctx.lineTo(px - 7, py - 18);
-            ctx.lineTo(px + 7, py - 18);
-            ctx.closePath();
-            ctx.fill();
-            ctx.restore();
-            // Draw labels
-            ctx.save();
-            ctx.font = 'bold 13px Arial';
-            ctx.textAlign = 'left';
-            ctx.textBaseline = 'bottom';
-            ctx.fillText(g.left, cx - r, cy - 60);
-            ctx.textAlign = 'right';
-            ctx.fillText(g.right, cx + r, cy - 60);
-            ctx.textAlign = 'center';
-            ctx.font = '12px Arial';
-            ctx.fillText(g.label, cx, cy + 30);
-            ctx.restore();
-          });
-        }
-      }
-    ]
+    type: "doughnut",
+    data: {
+      datasets: [{
+        data: [value, 1 - value],
+        backgroundColor: [color, "#eee"],
+        borderWidth: 0,
+        cutout: "80%",
+        circumference: 180,
+        rotation: 270,
+      }]
+    },
+    options: {
+      plugins: {
+        legend: { display: false },
+        title: { display: false }
+      },
+      layout: { padding: 0 },
+      responsive: false,
+      animation: false,
+    }
   };
 }
 // Generate an LSD Behavior Quadrants visualization using Canvas API
