@@ -189,22 +189,23 @@ function handleTuneDifferentialCommand(interaction, env, ctx) {
 // TUNE TRANSMISSION COMMAND HANDLER
 // This function processes the /tune-transmission command, looks up track and car data, and returns a transmission tuning embed.
 // ──────────────────────────────────────────────────────────────
-
-const { getTransmissionTune } = require('./transData');
-
-function handleTuneTransmission(track, car) {
-  // Use getTransmissionTune to get the correct transmission tune for the given track and car
-  // Export or return the result as needed
-  return getTransmissionTune(track, car);
+function handleTuneTransmissionCommand(trackName) {
+  const tune = TRANSMISSION_TUNINGS[trackName];
+  if (tune) {
+    transmissionTune = {
+      finalDrive: tune.finalDrive,
+      gears: tune.gears,
+    };
+    return transmissionTune;
+  } else {
+    transmissionTune = null;
+    return null; // or handle error as needed
+  }
 }
 
-module.exports.handleTuneTransmission = handleTuneTransmission;
-  const { data } = interaction;
-  const options = Object.fromEntries((data.options ?? []).map(opt => [opt.name, opt.value]));
-  const track = options.track;
-  const car = options.car;
+export { transmissionTune };
 
-  let result = calculateTransmissionTune(track, car);
+  let result = calculateTransmissionTune(track);
 
   if (!result) {
     return new JsonResponse({
@@ -224,12 +225,12 @@ module.exports.handleTuneTransmission = handleTuneTransmission;
     data: {
       embeds: [{
         title: `Transmission Tuning for ${track.replace(/_/g, ' ')}`,
-        description: `Car: ${car.replace(/_/g, ' ')}\n\nFinal Drive Ratio: ${result.finalDrive}\n\nGear Ratios:\n1st: ${result.gears['1st']}\n2nd: ${result.gears['2nd']}\n3rd: ${result.gears['3rd']}\n4th: ${result.gears['4th']}\n5th: ${result.gears['5th']}\n6th: ${result.gears['6th']}`,
+        description: `Car: ${car.replace(/_/g, ' ')}\n\nFinal Drive Ratio: ${transmissionTune.finalDrive}\n\nGear Ratios:\n1st: ${transmissionTune.gears['1st']}\n2nd: ${transmissionTune.gears['2nd']}\n3rd: ${transmissionTune.gears['3rd']}\n4th: ${transmissionTune.gears['4th']}\n5th: ${transmissionTune.gears['5th']}\n6th: ${transmissionTune.gears['6th']}`,
         color: 0x00ff00,
       }],
     },
   });
-
+}
 
 // ──────────────────────────────────────────────────────────────
 // AUTOCOMPLETE INTERACTION HANDLER
