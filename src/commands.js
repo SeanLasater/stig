@@ -2,6 +2,7 @@
 // Example: 'tune-downforce' (not 'Tune-Downforce')
 import { TIRE_CHOICES } from './downforceData.js';
 import { TRACK_CHOICES } from './transData.js';
+import { CARS } from './carData.js';
 
 // tune-downforce
 export const TUNEDOWNFORCE_COMMAND = {
@@ -46,12 +47,14 @@ export const TUNETRANSMISSION_COMMAND = {
       type: 3, // string
       required: true,
       autocomplete: true,
+      choices: TRACK_CHOICES, //DELETE IF BUGS OCCUR - TOO MANY CHOICES MAY CAUSE ISSUES
     },
     {
       name: 'car',                                   
       description: 'Car name (e.g. "Porsche 911 GT3 RS")',
       type: 3, // string
       autocomplete: true,
+      choices: CARS, //DELETE IF BUGS OCCUR - TOO MANY CHOICES MAY CAUSE ISSUES 
     },
   ],
 };

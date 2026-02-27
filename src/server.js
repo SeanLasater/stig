@@ -22,7 +22,7 @@ import {
 
 import { analyzeDifferentialTuning } from './diffData.js';
 import { TRACK_CHOICES, TRANSMISSION_TUNINGS } from './transData.js';
-import { CARS } from './cars.js';
+import { CARS } from './carData.js';
 import { calculateGripTune } from './tuning.js';
 import { JsonResponse } from './utils.js';
 
@@ -189,13 +189,22 @@ function handleTuneDifferentialCommand(interaction, env, ctx) {
 // TUNE TRANSMISSION COMMAND HANDLER
 // This function processes the /tune-transmission command, looks up track and car data, and returns a transmission tuning embed.
 // ──────────────────────────────────────────────────────────────
-function handleTuneTransmissionCommand(interaction) {
+
+const { getTransmissionTune } = require('./transData');
+
+function handleTuneTransmission(track, car) {
+  // Use getTransmissionTune to get the correct transmission tune for the given track and car
+  // Export or return the result as needed
+  return getTransmissionTune(track, car);
+}
+
+module.exports.handleTuneTransmission = handleTuneTransmission;
   const { data } = interaction;
   const options = Object.fromEntries((data.options ?? []).map(opt => [opt.name, opt.value]));
   const track = options.track;
   const car = options.car;
 
-  let result = (TRANSMISSION_TUNINGS[track] || null);
+  let result = calculateTransmissionTune(track, car);
 
   if (!result) {
     return new JsonResponse({
@@ -220,7 +229,7 @@ function handleTuneTransmissionCommand(interaction) {
       }],
     },
   });
-}
+
 
 // ──────────────────────────────────────────────────────────────
 // AUTOCOMPLETE INTERACTION HANDLER
