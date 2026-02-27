@@ -84,7 +84,7 @@ function handleTuneDifferentialCommand(interaction, env, ctx) {
     brakingSensitivity,
   });
 
-  // Create promise for follow-up chart generation (three gauge charts)
+  // Create promise for follow-up with -10 to 10 numbers for each characteristic
   const followUpPromise = (async () => {
     try {
       // choose a colour based on quadrant thresholds (preserves old palette)
@@ -96,46 +96,9 @@ function handleTuneDifferentialCommand(interaction, env, ctx) {
       else if (!isHighAccel && isHighBraking) embedColor = 0x0066ff;
       else embedColor = 0xffff00;
 
-      // Prepare three gauge chart configs
-      const gaugeConfigs = [
-        makeGaugeChartConfig(
-          analysis.scales.gripDrift.value,
-          analysis.scales.gripDrift.leftLabel,
-          analysis.scales.gripDrift.rightLabel,
-          '#4dff4d'
-        ),
-        makeGaugeChartConfig(
-          analysis.scales.underOver.value,
-          analysis.scales.underOver.leftLabel,
-          analysis.scales.underOver.rightLabel,
-          '#ffb84d'
-        ),
-        makeGaugeChartConfig(
-          analysis.scales.controlPlay.value,
-          analysis.scales.controlPlay.leftLabel,
-          analysis.scales.controlPlay.rightLabel,
-          '#4da6ff'
-        ),
-      ];
-
-      // Generate three QuickChart URLs
-      const chartUrls = [];
-      for (let i = 0; i < gaugeConfigs.length; i++) {
-        try {
-          const qcResp = await fetch('https://quickchart.io/chart/create', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ chart: gaugeConfigs[i], width: 200, height: 120, backgroundColor: 'transparent' }),
-          });
-          const qcJson = await qcResp.json().catch(() => ({}));
-          if (qcResp.ok && qcJson.url) {
-            chartUrls.push(qcJson.url);
-          } else {
-            chartUrls.push(null);
-          }
-        } catch (err) {
-          chartUrls.push(null);
-        }
+      // Convert normalized values (0..1) to -10..10 scale
+      function scaleToNum(val) {
+        return Math.round(val * 20 - 10);
       }
 
       // build embed using analysis output
@@ -147,17 +110,16 @@ function handleTuneDifferentialCommand(interaction, env, ctx) {
           { name: 'Initial Torque', value: `${initialTorque.toFixed(1)}`, inline: true },
           { name: 'Accel Sensitivity', value: `${accelerationSensitivity.toFixed(1)}`, inline: true },
           { name: 'Braking Sensitivity', value: `${brakingSensitivity.toFixed(1)}`, inline: true },
+          { name: `${analysis.scales.gripDrift.leftLabel} ↔ ${analysis.scales.gripDrift.rightLabel}`,
+            value: `${scaleToNum(analysis.scales.gripDrift.value)}`, inline: false },
+          { name: `${analysis.scales.underOver.leftLabel} ↔ ${analysis.scales.underOver.rightLabel}`,
+            value: `${scaleToNum(analysis.scales.underOver.value)}`, inline: false },
+          { name: `${analysis.scales.controlPlay.leftLabel} ↔ ${analysis.scales.controlPlay.rightLabel}`,
+            value: `${scaleToNum(analysis.scales.controlPlay.value)}`, inline: false },
         ],
-        footer: { text: 'Values normalized to 0–1 scale' },
+        footer: { text: 'Scale: -10 (left) to 10 (right)' },
         timestamp: new Date().toISOString(),
       };
-
-      // Add each gauge as an embed image (Discord only shows the first, so add as fields with image URLs)
-      embed.fields.push(
-        { name: `${analysis.scales.gripDrift.leftLabel} ↔ ${analysis.scales.gripDrift.rightLabel}`, value: chartUrls[0] ? `![gauge](${chartUrls[0]})` : 'Image unavailable', inline: false },
-        { name: `${analysis.scales.underOver.leftLabel} ↔ ${analysis.scales.underOver.rightLabel}`, value: chartUrls[1] ? `![gauge](${chartUrls[1]})` : 'Image unavailable', inline: false },
-        { name: `${analysis.scales.controlPlay.leftLabel} ↔ ${analysis.scales.controlPlay.rightLabel}`, value: chartUrls[2] ? `![gauge](${chartUrls[2]})` : 'Image unavailable', inline: false },
-      );
 
       // send the embed via webhook patch/post as before
       const appId = env.DISCORD_APPLICATION_ID || interaction.application_id || data.application_id;
