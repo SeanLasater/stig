@@ -96,6 +96,7 @@ function handleTuneDifferentialCommand(interaction, env, ctx) {
       else if (!isHighAccel && isHighBraking) embedColor = 0x0066ff;
       else embedColor = 0xffff00;
 
+
       // Convert normalized values (0..1) to -10..10 scale
       function scaleToNum(val) {
         return Math.round(val * 20 - 10);
@@ -116,6 +117,8 @@ function handleTuneDifferentialCommand(interaction, env, ctx) {
             value: `${scaleToNum(analysis.scales.underOver.value)}`, inline: false },
           { name: `${analysis.scales.controlPlay.leftLabel} ↔ ${analysis.scales.controlPlay.rightLabel}`,
             value: `${scaleToNum(analysis.scales.controlPlay.value)}`, inline: false },
+          { name: `${analysis.scales.brakeLock.leftLabel} ↔ ${analysis.scales.brakeLock.rightLabel}`,
+            value: `${scaleToNum(analysis.scales.brakeLock.value)}`, inline: false },
         ],
         footer: { text: 'Scale: -10 (left) to 10 (right)' },
         timestamp: new Date().toISOString(),

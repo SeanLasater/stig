@@ -328,6 +328,13 @@ export function analyzeDifferentialTuning(tuning) {
     1
   ); // 0 = playful, 1 = controllable
 
+  // new characteristic: braking lock (soft ↔ aggressive)
+  // Soft = low braking sensitivity, Aggressive = high
+  const brakeLockValue = Math.min(
+    Math.max(tuning.brakingSensitivity / maxValue, 0),
+    1
+  ); // 0 = soft, 1 = aggressive
+
   return {
     title,
     description,
@@ -346,6 +353,11 @@ export function analyzeDifferentialTuning(tuning) {
         value: controlPlayValue,
         leftLabel: 'Playful',
         rightLabel: 'Controllable'
+      },
+      brakeLock: {
+        value: brakeLockValue,
+        leftLabel: 'Soft Braking',
+        rightLabel: 'Aggressive Braking'
       }
     }
   };
