@@ -10,6 +10,7 @@ import {
 } from 'discord-interactions';
 import { TUNEDOWNFORCE_COMMAND, TUNETRANSMISSION_COMMAND, TUNEDIFFERENTIAL_COMMAND } from './commands.js';
 import { analyzeDifferentialTuning } from './diffScatter.js';
+import { makeCombinedGaugeChartConfig } from './diffScatter.js';
 import { TRACK_CHOICES } from './transData.js';
 import { CARS } from './cars.js';
 import { calculateGripTune } from './tuning.js';
@@ -83,7 +84,7 @@ function handleTuneDifferentialCommand(interaction, env, ctx) {
     brakingSensitivity,
   });
 
-  // Create promise for follow-up chart generation (sliding scales)
+  // Create promise for follow-up chart generation (gauge chart)
   const followUpPromise = (async () => {
     try {
       // choose a colour based on quadrant thresholds (preserves old palette)
@@ -95,60 +96,16 @@ function handleTuneDifferentialCommand(interaction, env, ctx) {
       else if (!isHighAccel && isHighBraking) embedColor = 0x0066ff;
       else embedColor = 0xffff00;
 
-      // build QuickChart config for three horizontal bars representing the scales
-      const labels = [
-        `${analysis.scales.gripDrift.leftLabel} ↔ ${analysis.scales.gripDrift.rightLabel}`,
-        `${analysis.scales.underOver.leftLabel} ↔ ${analysis.scales.underOver.rightLabel}`,
-        `${analysis.scales.controlPlay.leftLabel} ↔ ${analysis.scales.controlPlay.rightLabel}`,
-      ];
-      const values = [
-        analysis.scales.gripDrift.value,
-        analysis.scales.underOver.value,
-        analysis.scales.controlPlay.value,
-      ];
+      // Build combined gauge chart config
+      const chartConfig = makeCombinedGaugeChartConfig(analysis);
 
-      const chartConfig = {
-        type: 'bar',
-        data: {
-          labels,
-          datasets: [
-            {
-              label: 'Scale',
-              data: values,
-              backgroundColor: '#0066ff',
-            },
-          ],
-        },
-        options: {
-          indexAxis: 'y',
-          scales: {
-            x: {
-              min: 0,
-              max: 1,
-              ticks: {
-                stepSize: 0.25,
-                callback: val => `${Math.round(val * 100)}%`,
-              },
-              title: { display: true, text: 'Normalized' },
-            },
-            y: {
-              ticks: { font: { size: 10 } },
-            },
-          },
-          plugins: {
-            legend: { display: false },
-            title: { display: true, text: 'Differential Tuning Scales' },
-          },
-        },
-      };
-
-      // use QuickChart again to convert this config to a hosted url
+      // use QuickChart to convert this config to a hosted url
       let chartUrl;
       try {
         const qcResp = await fetch('https://quickchart.io/chart/create', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ chart: chartConfig, width: 640, height: 300, backgroundColor: 'transparent' }),
+          body: JSON.stringify({ chart: chartConfig, width: 400, height: 360, backgroundColor: 'transparent' }),
         });
         const qcJson = await qcResp.json().catch(() => ({}));
         if (qcResp.ok && qcJson.url) {
