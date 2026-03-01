@@ -6,37 +6,49 @@
  */
 export function analyzeDifferentialTuning(tuning) {
   const maxValue = 60;
-  const accelMidpoint = 25;
-  const initialMidpoint = 15;
 
-  // determine a “zone” for the title/description
-  const isHighAccel = tuning.accelerationSensitivity >= accelMidpoint;
-  const isHighInitial = tuning.initialTorque >= initialMidpoint;
-  let title, description;
+  // Create 4 zones for each parameter to generate 16 unique combinations
+  const accelZone = Math.floor((tuning.accelerationSensitivity / maxValue) * 4);
+  const initialZone = Math.floor((tuning.initialTorque / maxValue) * 4);
 
-  if (!isHighAccel && !isHighInitial) {
-    title = 'Free Diff / Loose Oversteer';
-    description =
-      'Very low acceleration and torque. The car will rotate easily and feel very playful ' +
-      'but it is unforgiving – drift friendly and prone to snap oversteer.';
-  } else if (isHighAccel && !isHighInitial) {
-    title = 'Throttle‑Stable Oversteer';
-    description =
-      'High acceleration sensitivity with low torque pre‑load. You get good rotation on gas, ' +
-      'and the car resists mid‑corner snaps. Excellent for power‑on entries.';
-  } else if (!isHighAccel && isHighInitial) {
-    title = 'Locked Diff / Preloaded Understeer';
-    description =
-      'High initial torque with low accel response. The rear is planted, it pushes in corners ' +
-      'and is very stable, but it is slow in tight sections.';
-  } else {
-    title = 'Full‑Lock Stability';
-    description =
-      'Both values are high; the diff is effectively locked. Expect maximum stability, ' +
-      'very predictable behaviour, and lots of grip at the cost of rotation.';
-  }
+  // 16 unique tuning profiles in a 4x4 matrix
+  // Rows: accel zones (0-3), Columns: initial torque zones (0-3)
+  const profiles = [
+    // Very Low Accel (0-15)
+    [
+      { title: 'Freewheel', description: 'Ultra-loose differential with minimal lock. Extremely responsive to steering inputs, snap oversteer prone. For drift specialists only.' },
+      { title: 'Drift Prone', description: 'Very low accel, low-mid preload. The car rotates easily but feels unstable mid-corner. Quick inputs necessary.' },
+      { title: 'Tail-Happy', description: 'Low accel with moderate preload. Easier control than pure drift, but rear stays light. Good for drifters learning stability.' },
+      { title: 'Rear-Light GTR', description: 'Low accel, high preload. Paradoxically light-feeling in the rear despite high preload; unusual and demanding setup.' }
+    ],
+    // Low Accel (15-30)
+    [
+      { title: 'Loose Street', description: 'Low accel sensitivity with no preload. Street-car feel with plenty of rotational freedom. Twitchy on limit.' },
+      { title: 'Neutral Free', description: 'Both parameters low-mid. Balanced oversteer bias with smooth, progressive feel. Great for learning smooth inputs.' },
+      { title: 'Progressive Lock', description: 'Low accel, moderate-high preload. Locks in progressively, resisting sudden yaw swings. Confidence-inspiring mid-corner.' },
+      { title: 'Staged Lock', description: 'Low accel, very high preload. Locked feel without maximum stiffness. Planted rear, playful at the limit.' }
+    ],
+    // High Accel (30-45)
+    [
+      { title: 'Throttle Pop', description: 'High accel sensitivity, minimal preload. Spins up instantly on power application. Requires precise throttle modulation.' },
+      { title: 'Gas Responsive', description: 'High accel, low-mid preload. Snappy on-throttle response with acceptable stability. Good power-on control.' },
+      { title: 'Accel Stable', description: 'High accel sensitivity with moderate preload. Excellent throttle feel and rotation; resists snap oversteer well.' },
+      { title: 'Power-Lock Hybrid', description: 'High accel, high preload. Maximum on-power rotation combined with strong mid-field stability. Fast-car setup.' }
+    ],
+    // Very High Accel (45-60)
+    [
+      { title: 'Max Rotation', description: 'Maximum accel, minimum preload. Spins at a breath; extremely sensitive and demanding. Track-only drift setup.' },
+      { title: 'Radical Throttle', description: 'Very high accel, low preload. Extreme on-power rotation. Loses grip quick; expert drivers only.' },
+      { title: 'Killer Combos', description: 'Very high accel and moderate preload. Rotation on demand with surprising mid-corner grip. Unpredictable and rewarding.' },
+      { title: 'Full-Bore Lock', description: 'Maximum accel and maximum preload. Fully-locked, ultra-aggressive feel. Race-tuned, unforgiving, lightning-fast.' }
+    ]
+  ];
 
-  // sliding‑scale metrics
+  const profile = profiles[accelZone][initialZone];
+  const title = profile.title;
+  const description = profile.description;
+
+  // sliding-scale metrics
 
   // grip ↔ drift: more initial torque & less accel → grip
   const gripDriftValue = (() => {
