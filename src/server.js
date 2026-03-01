@@ -190,53 +190,74 @@ function handleTuneDifferentialCommand(interaction, env, ctx) {
 // This function processes the /tune-transmission command, looks up track and car data, and returns a transmission tuning embed.
 // ──────────────────────────────────────────────────────────────
 
-/*
+function handleTuneTransmissionCommand(interaction) {
+  const { data } = interaction;
+  const options = Object.fromEntries((data.options ?? []).map(opt => [opt.name, opt.value]));
+  const trackValue = options.track;
+  const carValue = options.car;
 
-let transmissionTune = null; 
+  // Look up track and car data
+  const trackData = TRANSMISSION_TUNINGS[trackValue];
+  const carData = CARS.find(car => car.value === carValue);
 
-function handleTuneTransmissionCommand(trackName) {
-  const tune = TRANSMISSION_TUNINGS[TRACK_CHOICES.find(track => track.value === trackName)?.value];
-  if (tune) {
-    transmissionTune = {
-      finalDrive: tune.finalDrive,
-      gears: tune.gears,
-    };
-    return transmissionTune;
-  } else {
-    transmissionTune = null;
-    return null; // or handle error as needed
+  // Validate that both track and car were found
+  if (!trackData) {
+    return new JsonResponse({
+      type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
+      data: {
+        embeds: [{
+          title: 'Invalid Track',
+          description: `Track "${trackValue}" not found in transmission tuning database.`,
+          color: 0xff0000,
+        }],
+      },
+    });
   }
-}
 
-let result = calculateTransmissionTune(track);
+  if (!carData) {
+    return new JsonResponse({
+      type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
+      data: {
+        embeds: [{
+          title: 'Invalid Car',
+          description: `Car "${carValue}" not found in car database.`,
+          color: 0xff0000,
+        }],
+      },
+    });
+  }
 
-if (!result) {
+  // Find track name from TRACK_CHOICES
+  const trackName = TRACK_CHOICES.find(t => t.value === trackValue)?.name || trackValue;
+
+  // Build gear ratio fields
+  const gearFields = Object.entries(trackData.gears).map(([gear, ratio]) => ({
+    name: gear,
+    value: `\`${ratio.toFixed(3)}\``,
+    inline: true,
+  }));
+
   return new JsonResponse({
     type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
     data: {
       embeds: [{
-        title: 'Track Not Found',
-        description: `No transmission tuning data found for track "${track}".`,
-        color: 0xff0000,
+        title: 'GT7 Transmission Tuning',
+        color: 0x1e90ff,
+        fields: [
+          { name: 'Track', value: `**${trackName}**`, inline: true },
+          { name: 'Car', value: `**${carData.name}**`, inline: true },
+          { name: 'Drivetrain', value: `**${carData.drivetrain}**`, inline: true },
+          { name: 'Final Drive', value: `\`\`\`${trackData.finalDrive.toFixed(3)}\`\`\``, inline: false },
+          { name: 'Gear Ratios', value: '\u200b', inline: false },
+          ...gearFields,
+        ],
+        footer: { text: 'Optimize for track characteristics and car setup' },
+        timestamp: new Date().toISOString(),
       }],
     },
   });
 }
 
-return new JsonResponse({
-  type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
-   data: {
-    embeds: [{
-      title: `Transmission Tuning for ${track.replace(/_/g, ' ')}`,
-      description: `Car: ${car.replace(/_/g, ' ')}\n\nFinal Drive Ratio: ${transmissionTune.finalDrive}\n\nGear Ratios:\n1st: ${transmissionTune.gears['1st']}\n2nd: ${transmissionTune.gears['2nd']}\n3rd: ${transmissionTune.gears['3rd']}\n4th: ${transmissionTune.gears['4th']}\n5th: ${transmissionTune.gears['5th']}\n6th: ${transmissionTune.gears['6th']}`,
-      color: 0x00ff00,
-    }],
-  },
-});
-
-*/
-
-// ──────────────────────────────────────────────────────────────
 // AUTOCOMPLETE INTERACTION HANDLER
 // ──────────────────────────────────────────────────────────────
 
@@ -344,16 +365,7 @@ router.post('/', async (request, env, ctx) => {
       }
 
       case TUNETRANSMISSION_COMMAND.name.toLowerCase(): {
-        return new JsonResponse({
-          type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
-          data: {
-            embeds: [{
-              title: 'Transmission Tuning',
-              description: 'Transmission tuning coming soon!',
-              color: 0xffa500,
-            }],
-          },
-        });
+        return handleTuneTransmissionCommand(interaction);
       }
 
       case TUNEDIFFERENTIAL_COMMAND.name.toLowerCase(): {
