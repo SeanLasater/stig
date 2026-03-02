@@ -278,17 +278,22 @@ function handleRaceRestrictionsCommand(interaction) {
   const today = new Date();
   const dayOfMonth = today.getDate();
 
-  // Build the restriction text
-  let restrictionText = `${name}\n\nLivery Required!!\n\nClass : ${classOrCar}\n\nTyre : ${tyre}\n\nProhibited : ${prohibited}\n\n**${damage}**`;
+  // Build the description with proper formatting
+  let description = `**${name}**\n\n*Livery Required!!*\n\n**Class :** ${classOrCar}\n\n**Tyre :** ${tyre}\n\n**Prohibited :** ${prohibited}\n\n**${damage}**`;
   
   if (notes) {
-    restrictionText += `\n\n${notes}`;
+    description += `\n\n${notes}`;
   }
 
   return new JsonResponse({
     type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
     data: {
-      content: `**Wednesday the ${dayOfMonth} Restrictions :**\n\n\`\`\`\n${restrictionText}\n\`\`\``,
+      embeds: [{
+        title: `Wednesday the ${dayOfMonth} Restrictions :`,
+        description: description,
+        color: 0xff4500, // Orange-red color for visibility
+        timestamp: new Date().toISOString(),
+      }],
     },
   });
 }
