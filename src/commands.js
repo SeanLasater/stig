@@ -46,14 +46,13 @@ export const TUNETRANSMISSION_COMMAND = {
       type: 3, // string
       required: true,
       autocomplete: true,
-      choices: TRACK_CHOICES, //DELETE IF BUGS OCCUR - TOO MANY CHOICES MAY CAUSE ISSUES
     },
     {
       name: 'car',                                   
       description: 'Car name (e.g. "Porsche 911 GT3 RS")',
       type: 3, // string
+      required: true,
       autocomplete: true,
-      choices: CARS, //DELETE IF BUGS OCCUR - TOO MANY CHOICES MAY CAUSE ISSUES 
     },
   ],
 };
