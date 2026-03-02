@@ -19,9 +19,9 @@ import {
   TUNETRANSMISSION_COMMAND, 
   TUNEDIFFERENTIAL_COMMAND,
   RACERESTRICTIONS_COMMAND,
-  DAMAGE_CHOICES
 } from './commands.js';
 
+import { DAMAGE_CHOICES } from './damageData.js';
 import { analyzeDifferentialTuning } from './diffData.js';
 import { TRACK_CHOICES, TRANSMISSION_TUNINGS } from './transData.js';
 import { TIRE_CHOICES } from './downforceData.js';
