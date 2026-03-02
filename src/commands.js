@@ -1,15 +1,9 @@
 // Discord slash command definitions.
 // Example: 'tune-downforce' (not 'Tune-Downforce')
 import { TIRE_CHOICES } from './downforceData.js';
+import { DAMAGE_CHOICES } from './damageData.js';
 import { TRACK_CHOICES } from './transData.js';
 import { CARS } from './carData.js';
-
-// Damage choices for race restrictions
-export const DAMAGE_CHOICES = [
-  { name: 'None', value: 'none' },
-  { name: 'Light', value: 'light' },
-  { name: 'Permanent', value: 'permanent' },
-];
 
 // tune-downforce
 export const TUNEDOWNFORCE_COMMAND = {
@@ -118,7 +112,7 @@ export const RACERESTRICTIONS_COMMAND = {
       description: 'Tyre restrictions',
       type: 3, // string
       required: true,
-      choices: TIRE_CHOICES,
+      autocomplete: true,
     },
     {
       name: 'prohibited',
@@ -131,7 +125,7 @@ export const RACERESTRICTIONS_COMMAND = {
       description: 'Damage settings',
       type: 3, // string
       required: true,
-      choices: DAMAGE_CHOICES,
+      autocomplete: true,
     },
     {
       name: 'notes',
