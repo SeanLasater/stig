@@ -17,7 +17,8 @@ import {
 import { 
   TUNEDOWNFORCE_COMMAND, 
   TUNETRANSMISSION_COMMAND, 
-  TUNEDIFFERENTIAL_COMMAND 
+  TUNEDIFFERENTIAL_COMMAND,
+  RACERESTRICTIONS_COMMAND
 } from './commands.js';
 
 import { analyzeDifferentialTuning } from './diffData.js';
@@ -258,6 +259,41 @@ function handleTuneTransmissionCommand(interaction) {
   });
 }
 
+// ──────────────────────────────────────────────────────────────
+// RACE RESTRICTIONS COMMAND HANDLER
+// This function processes the /race-restrictions command and returns a formatted restrictions message.
+// ──────────────────────────────────────────────────────────────
+
+function handleRaceRestrictionsCommand(interaction) {
+  const { data } = interaction;
+  const options = Object.fromEntries((data.options ?? []).map(opt => [opt.name, opt.value]));
+  const name = options.name || '';
+  const classOrCar = options.class || '';
+  const tyre = options.tyre || '';
+  const prohibited = options.prohibited || '';
+  const damage = options.damage || '';
+  const notes = options.notes || '';
+
+  // Get current day of the month
+  const today = new Date();
+  const dayOfMonth = today.getDate();
+
+  // Build the restriction text
+  let restrictionText = `${name}\n\nLivery Required!!\n\nClass : ${classOrCar}\n\nTyre : ${tyre}\n\nProhibited : ${prohibited}\n\n**${damage}**`;
+  
+  if (notes) {
+    restrictionText += `\n\n${notes}`;
+  }
+
+  return new JsonResponse({
+    type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
+    data: {
+      content: `**Wednesday the ${dayOfMonth} Restrictions :**\n\n\`\`\`\n${restrictionText}\n\`\`\``,
+    },
+  });
+}
+
+// ──────────────────────────────────────────────────────────────
 // AUTOCOMPLETE INTERACTION HANDLER
 // ──────────────────────────────────────────────────────────────
 
@@ -370,6 +406,10 @@ router.post('/', async (request, env, ctx) => {
 
       case TUNEDIFFERENTIAL_COMMAND.name.toLowerCase(): {
         return handleTuneDifferentialCommand(interaction, env, ctx);
+      }
+
+      case RACERESTRICTIONS_COMMAND.name.toLowerCase(): {
+        return handleRaceRestrictionsCommand(interaction);
       }
 
       default:
