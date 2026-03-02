@@ -1,9 +1,9 @@
-// Discord slash command definitions.
-// Example: 'tune-downforce' (not 'Tune-Downforce')
 import { TIRE_CHOICES } from './downforceData.js';
+/*
 import { DAMAGE_CHOICES } from './damageData.js';
 import { TRACK_CHOICES } from './transData.js';
 import { CARS } from './carData.js';
+*/
 
 // tune-downforce
 export const TUNEDOWNFORCE_COMMAND = {
