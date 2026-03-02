@@ -276,9 +276,22 @@ function handleRaceRestrictionsCommand(interaction) {
   const damageValue = options.damage || '';
   const notes = options.notes || '';
 
-  // Get current day of the month
+  // Get current day of the month and add ordinal suffix
   const today = new Date();
   const dayOfMonth = today.getDate();
+  
+  // Function to add ordinal suffix (1st, 2nd, 3rd, 4th, etc.)
+  function getOrdinalDay(n) {
+    if (n > 3 && n < 21) return `${n}th`;
+    switch (n % 10) {
+      case 1: return `${n}st`;
+      case 2: return `${n}nd`;
+      case 3: return `${n}rd`;
+      default: return `${n}th`;
+    }
+  }
+  
+  const ordinalDay = getOrdinalDay(dayOfMonth);
 
   // Look up tire name from TIRE_CHOICES
   const tireChoice = TIRE_CHOICES.find(t => t.value === tyreValue);
@@ -299,7 +312,7 @@ function handleRaceRestrictionsCommand(interaction) {
     type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
     data: {
       embeds: [{
-        title: `Wednesday the ${dayOfMonth} Restrictions :`,
+        title: `Wednesday the ${ordinalDay} Restrictions :`,
         description: description,
         color: 0xff4500, // Orange-red color for visibility
         timestamp: new Date().toISOString(),
