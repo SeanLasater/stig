@@ -18,11 +18,13 @@ import {
   TUNEDOWNFORCE_COMMAND, 
   TUNETRANSMISSION_COMMAND, 
   TUNEDIFFERENTIAL_COMMAND,
-  RACERESTRICTIONS_COMMAND
+  RACERESTRICTIONS_COMMAND,
+  DAMAGE_CHOICES
 } from './commands.js';
 
 import { analyzeDifferentialTuning } from './diffData.js';
 import { TRACK_CHOICES, TRANSMISSION_TUNINGS } from './transData.js';
+import { TIRE_CHOICES } from './downforceData.js';
 import { CARS } from './carData.js';
 import { calculateGripTune } from './tuning.js';
 import { JsonResponse } from './utils.js';
@@ -269,17 +271,25 @@ function handleRaceRestrictionsCommand(interaction) {
   const options = Object.fromEntries((data.options ?? []).map(opt => [opt.name, opt.value]));
   const name = options.name || '';
   const classOrCar = options.class || '';
-  const tyre = options.tyre || '';
+  const tyreValue = options.tyre || '';
   const prohibited = options.prohibited || '';
-  const damage = options.damage || '';
+  const damageValue = options.damage || '';
   const notes = options.notes || '';
 
   // Get current day of the month
   const today = new Date();
   const dayOfMonth = today.getDate();
 
+  // Look up tire name from TIRE_CHOICES
+  const tireChoice = TIRE_CHOICES.find(t => t.value === tyreValue);
+  const tyreName = tireChoice ? tireChoice.name : tyreValue;
+
+  // Look up damage name from DAMAGE_CHOICES
+  const damageChoice = DAMAGE_CHOICES.find(d => d.value === damageValue);
+  const damageName = damageChoice ? damageChoice.name : damageValue;
+
   // Build the description with proper formatting
-  let description = `**${name}**\n\n*Livery Required!!*\n\n**Class :** ${classOrCar}\n\n**Tyre :** ${tyre}\n\n**Prohibited :** ${prohibited}\n\n**${damage}**`;
+  let description = `**${name}**\n\n*Livery Required!!*\n\n**Class :** ${classOrCar}\n\n**Tyre :** ${tyreName}\n\n**Prohibited :** ${prohibited}\n\n**Damage :** ${damageName}`;
   
   if (notes) {
     description += `\n\n${notes}`;
