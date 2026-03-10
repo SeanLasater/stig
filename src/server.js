@@ -16,6 +16,7 @@ import {
 
 import { 
   TUNEDOWNFORCE_COMMAND, 
+  TUNECAMBERTHRUST_COMMAND,
   TUNETRANSMISSION_COMMAND, 
   TUNEDIFFERENTIAL_COMMAND,
   RACERESTRICTIONS_COMMAND,
@@ -26,7 +27,7 @@ import { analyzeDifferentialTuning } from './diffData.js';
 import { TRACK_CHOICES, TRANSMISSION_TUNINGS } from './transData.js';
 import { TIRE_CHOICES } from './downforceData.js';
 import { CARS } from './carData.js';
-import { calculateGripTune } from './tuning.js';
+import { calculateCamberThrustToeOut, calculateGripTune } from './tuning.js';
 import { JsonResponse } from './utils.js';
 
 // ──────────────────────────────────────────────────────────────
@@ -75,6 +76,49 @@ function handleTuneDownforceCommand(interaction) {
             { name: '**REAR**', value: `\`\`\`Downforce: ${result.rearDF.padStart(6)}\nNat Freq : ${result.rearNF} Hz\`\`\``, inline: true },
           ],
           footer: { text: 'Pure grip focus • No speed trade-off • Values in lbs' },
+          timestamp: new Date().toISOString(),
+        },
+      ],
+    },
+  });
+}
+
+function handleTuneCamberThrustCommand(interaction) {
+  const { data } = interaction;
+  const options = Object.fromEntries((data.options ?? []).map(opt => [opt.name, opt.value]));
+  const tire = options.tire;
+  const camber = options.camber;
+
+  const result = calculateCamberThrustToeOut(tire, camber);
+
+  if ('error' in result) {
+    return new JsonResponse({
+      type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
+      data: {
+        embeds: [
+          {
+            title: 'Invalid Input',
+            description: result.error,
+            color: 0xff0000,
+          },
+        ],
+      },
+    });
+  }
+
+  return new JsonResponse({
+    type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
+    data: {
+      embeds: [
+        {
+          title: 'Camber Thrust Compensation',
+          color: 0x00b894,
+          fields: [
+            { name: 'Tire', value: result.tireDisplay, inline: false },
+            { name: 'Camber', value: `${result.camber}°`, inline: true },
+            { name: 'Optimal Toe-Out', value: `${result.toeOut}°`, inline: true },
+          ],
+          footer: { text: 'Toe-out recommendation helps offset camber thrust pull' },
           timestamp: new Date().toISOString(),
         },
       ],
@@ -426,6 +470,10 @@ router.post('/', async (request, env, ctx) => {
       case TUNEDOWNFORCE_COMMAND.name.toLowerCase(): {
         // User invoked /tune-downforce
         return handleTuneDownforceCommand(interaction);
+      }
+
+      case TUNECAMBERTHRUST_COMMAND.name.toLowerCase(): {
+        return handleTuneCamberThrustCommand(interaction);
       }
 
       case TUNETRANSMISSION_COMMAND.name.toLowerCase(): {

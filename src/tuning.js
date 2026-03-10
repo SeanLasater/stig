@@ -10,6 +10,18 @@ export const gripDict = {
   rh: 1.25, rm: 1.29, rs: 1.33,  // Racing: Hard, Medium, Soft (highest grip)
 };
 
+const camberThrustCoefficients = {
+  ch: 0.041,
+  cm: 0.043,
+  cs: 0.045,
+  sh: 0.047,
+  sm: 0.049,
+  ss: 0.051,
+  rh: 0.053,
+  rm: 0.055,
+  rs: 0.057,
+};
+
 // Human-readable tire names displayed in response embeds
 // Maps uppercase tire codes to marketing names shown to Discord users
 export const tireNames = {
@@ -79,6 +91,27 @@ export function calculateGripTune(weightLbs, frontPercent, tire) {
     rearNF:   rearNF.toFixed(2),                                       // Rear frequency Hz (2 decimals)
     grip:     grip.toFixed(2),                                         // Grip coefficient (2 decimals)
     tireDisplay: tireNames[tire.toUpperCase()] || tire.toUpperCase(),  // Human-readable tire name
+  };
+}
+
+export function calculateCamberThrustToeOut(tire, camber) {
+  const tireKey = tire.toLowerCase();
+  const grip = gripDict[tireKey] ?? 1.0;
+  const tireDisplay = tireNames[tire.toUpperCase()] || tire.toUpperCase();
+
+  if (camber < 0 || camber > 8) {
+    return { error: 'Camber must be between 0 and 8 degrees.' };
+  }
+
+  const baseCoefficient = camberThrustCoefficients[tireKey] ?? 0.05;
+  const gripAdjustment = 1 + (grip - 1) * 0.5;
+  const rawToeOut = camber * baseCoefficient * gripAdjustment;
+  const toeOut = Math.min(0.45, Math.max(0.00, rawToeOut));
+
+  return {
+    tireDisplay,
+    camber: camber.toFixed(2),
+    toeOut: toeOut.toFixed(3),
   };
 }
 

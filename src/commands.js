@@ -1,7 +1,9 @@
 import { TIRE_CHOICES } from './downforceData.js';
+/*
 import { DAMAGE_CHOICES } from './damageData.js';
 import { TRACK_CHOICES } from './transData.js';
 import { CARS } from './carData.js';
+*/
 
 // tune-downforce
 export const TUNEDOWNFORCE_COMMAND = {
@@ -32,6 +34,29 @@ export const TUNEDOWNFORCE_COMMAND = {
       choices: TIRE_CHOICES,
     },
   ]
+};
+
+// tune-camberthrust
+export const TUNECAMBERTHRUST_COMMAND = {
+  name: 'tune-camberthrust',
+  description: 'Calculate optimal toe-out to counteract camber thrust.',
+  options: [
+    {
+      name: 'tire',
+      description: 'Tire compound',
+      type: 3,
+      required: true,
+      choices: TIRE_CHOICES,
+    },
+    {
+      name: 'camber',
+      description: 'Front camber angle in degrees',
+      type: 10,
+      required: true,
+      min_value: 0,
+      max_value: 8,
+    },
+  ],
 };
 
 // tune-transmission
