@@ -81,8 +81,9 @@ describe('Server', () => {
       const response = await server.fetch(request, env);
       const body = await response.json();
       expect(body.type).to.equal(
-        InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
+        InteractionResponseType.DEFERRED_CHANNEL_MESSAGE_WITH_SOURCE,
       );
+      expect(body.data.flags).to.equal(InteractionResponseFlags.EPHEMERAL);
     });
 
     it('should handle a TUNECAMBERTHRUST command interaction', async () => {
@@ -110,9 +111,9 @@ describe('Server', () => {
       const response = await server.fetch(request, {});
       const body = await response.json();
       expect(body.type).to.equal(
-        InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
+        InteractionResponseType.DEFERRED_CHANNEL_MESSAGE_WITH_SOURCE,
       );
-      expect(body.data.embeds[0].title).to.equal('Camber Thrust Compensation');
+      expect(body.data.flags).to.equal(InteractionResponseFlags.EPHEMERAL);
     });
 
     it('should handle a TUNEDIFFERENTIAL command interaction', async () => {
@@ -133,43 +134,19 @@ describe('Server', () => {
         url: new URL('/', 'http://discordo.example'),
       };
 
-      const env = {
-        DISCORD_APPLICATION_ID: '123456789',
-      };
+      const env = {};
 
       verifyDiscordRequestStub.resolves({
         isValid: true,
         interaction: interaction,
       });
 
-      // stub QuickChart call and webhook patch
-      const fetchStub = sinon.stub(global, 'fetch');
-
-      // respond to chart creation request
-      fetchStub
-        .withArgs('https://quickchart.io/chart/create', sinon.match.any)
-        .resolves({ ok: true, json: async () => ({ url: 'https://qc.test/chart' }) });
-
-      // any other fetch (patch/post) return generic success
-      fetchStub.callsFake(() =>
-        Promise.resolve({ ok: true, status: 200, json: async () => ({}), text: async () => '' }),
-      );
-
-      // capture waitUntil promise
-      let waited;
-      const ctx = { waitUntil: (p) => { waited = p; } };
-
-      const response = await server.fetch(request, env, ctx);
+      const response = await server.fetch(request, env, {});
       const body = await response.json();
       expect(body.type).to.equal(
         InteractionResponseType.DEFERRED_CHANNEL_MESSAGE_WITH_SOURCE,
       );
-
-      // wait for follow-up to finish
-      await waited;
-
-      expect(fetchStub.withArgs('https://quickchart.io/chart/create', sinon.match.any).calledOnce).to.be.true;
-      fetchStub.restore();
+      expect(body.data.flags).to.equal(InteractionResponseFlags.EPHEMERAL);
     });
 
     it('should handle an unknown command interaction', async () => {

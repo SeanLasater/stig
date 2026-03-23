@@ -11,6 +11,7 @@ import { AutoRouter } from 'itty-router';
 import {
   InteractionResponseType,
   InteractionType,
+  InteractionResponseFlags,
   verifyKey,
 } from 'discord-interactions';
 
@@ -47,40 +48,34 @@ function handleTuneDownforceCommand(interaction) {
 
   // Check if calculation returned an error (e.g., invalid weight distribution)
   if ('error' in result) {
-    return new JsonResponse({
-      type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
-      data: {
-        embeds: [
-          {
-            title: 'Invalid Input',
-            description: result.error,
-            color: 0xff0000,
-          },
-        ],
-      },
-    });
-  }
-
-  return new JsonResponse({
-    type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
-    data: {
+    return {
       embeds: [
         {
-          title: 'GT7 Grip-Optimized Tuning',
-          color: 0xffd700,
-          fields: [
-            { name: 'Weight', value: `${weight.toLocaleString()} lbs`, inline: false },
-            { name: 'Balance', value: `${front}% Front │ ${100 - front}% Rear`, inline: false },
-            { name: 'Tire', value: `${result.tireDisplay} (Grip: ${result.grip}g)`, inline: false },
-            { name: '**FRONT**', value: `\`\`\`Downforce: ${result.frontDF.padStart(6)}\nNat Freq : ${result.frontNF} Hz\`\`\``, inline: true },
-            { name: '**REAR**', value: `\`\`\`Downforce: ${result.rearDF.padStart(6)}\nNat Freq : ${result.rearNF} Hz\`\`\``, inline: true },
-          ],
-          footer: { text: 'Pure grip focus • No speed trade-off • Values in lbs' },
-          timestamp: new Date().toISOString(),
+          title: 'Invalid Input',
+          description: result.error,
+          color: 0xff0000,
         },
       ],
-    },
-  });
+    };
+  }
+
+  return {
+    embeds: [
+      {
+        title: 'GT7 Grip-Optimized Tuning',
+        color: 0xffd700,
+        fields: [
+          { name: 'Weight', value: `${weight.toLocaleString()} lbs`, inline: false },
+          { name: 'Balance', value: `${front}% Front │ ${100 - front}% Rear`, inline: false },
+          { name: 'Tire', value: `${result.tireDisplay} (Grip: ${result.grip}g)`, inline: false },
+          { name: '**FRONT**', value: `\`\`\`Downforce: ${result.frontDF.padStart(6)}\nNat Freq : ${result.frontNF} Hz\`\`\``, inline: true },
+          { name: '**REAR**', value: `\`\`\`Downforce: ${result.rearDF.padStart(6)}\nNat Freq : ${result.rearNF} Hz\`\`\``, inline: true },
+        ],
+        footer: { text: 'Pure grip focus • No speed trade-off • Values in lbs' },
+        timestamp: new Date().toISOString(),
+      },
+    ],
+  };
 }
 
 function handleTuneCamberThrustCommand(interaction) {
@@ -92,38 +87,32 @@ function handleTuneCamberThrustCommand(interaction) {
   const result = calculateCamberThrustToeOut(tire, camber);
 
   if ('error' in result) {
-    return new JsonResponse({
-      type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
-      data: {
-        embeds: [
-          {
-            title: 'Invalid Input',
-            description: result.error,
-            color: 0xff0000,
-          },
-        ],
-      },
-    });
-  }
-
-  return new JsonResponse({
-    type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
-    data: {
+    return {
       embeds: [
         {
-          title: 'Camber Thrust Compensation',
-          color: 0x00b894,
-          fields: [
-            { name: 'Tire', value: result.tireDisplay, inline: false },
-            { name: 'Camber', value: `${result.camber}°`, inline: true },
-            { name: 'Optimal Toe-Out', value: `${result.toeOut}°`, inline: true },
-          ],
-          footer: { text: 'Toe-out recommendation helps offset camber thrust pull' },
-          timestamp: new Date().toISOString(),
+          title: 'Invalid Input',
+          description: result.error,
+          color: 0xff0000,
         },
       ],
-    },
-  });
+    };
+  }
+
+  return {
+    embeds: [
+      {
+        title: 'Camber Thrust Compensation',
+        color: 0x00b894,
+        fields: [
+          { name: 'Tire', value: result.tireDisplay, inline: false },
+          { name: 'Camber', value: `${result.camber}°`, inline: true },
+          { name: 'Optimal Toe-Out', value: `${result.toeOut}°`, inline: true },
+        ],
+        footer: { text: 'Toe-out recommendation helps offset camber thrust pull' },
+        timestamp: new Date().toISOString(),
+      },
+    ],
+  };
 }
 
 // ──────────────────────────────────────────────────────────────
@@ -131,8 +120,8 @@ function handleTuneCamberThrustCommand(interaction) {
 // This function processes the /tune-differential command, analyzes the tuning characteristics, and returns a detailed embed with insights and sliding-scale metrics.
 // ──────────────────────────────────────────────────────────────
 
-function handleTuneDifferentialCommand(interaction, env, ctx) {
-  const { data, token } = interaction;
+function handleTuneDifferentialCommand(interaction) {
+  const { data } = interaction;
   const options = Object.fromEntries((data.options ?? []).map(opt => [opt.name, opt.value]));
   const initialTorque = options.initial_torque;
   const accelerationSensitivity = options.acceleration_sensitivity;
@@ -145,26 +134,21 @@ function handleTuneDifferentialCommand(interaction, env, ctx) {
     brakingSensitivity,
   });
 
-  // Create promise for follow-up with -10 to 10 numbers for each characteristic
-  const followUpPromise = (async () => {
-    try {
-      // choose a colour based on quadrant thresholds (preserves old palette)
-      const isHighAccel = accelerationSensitivity > 30;
-      const isHighBraking = brakingSensitivity > 30;
-      let embedColor = 0xffd700;
-      if (isHighAccel && isHighBraking) embedColor = 0xff6b00;
-      else if (isHighAccel && !isHighBraking) embedColor = 0xff0000;
-      else if (!isHighAccel && isHighBraking) embedColor = 0x0066ff;
-      else embedColor = 0xffff00;
+  const isHighAccel = accelerationSensitivity > 30;
+  const isHighBraking = brakingSensitivity > 30;
+  let embedColor = 0xffd700;
+  if (isHighAccel && isHighBraking) embedColor = 0xff6b00;
+  else if (isHighAccel && !isHighBraking) embedColor = 0xff0000;
+  else if (!isHighAccel && isHighBraking) embedColor = 0x0066ff;
+  else embedColor = 0xffff00;
 
+  function scaleToNum(val) {
+    return Math.round(val * 20 - 10);
+  }
 
-      // Convert normalized values (0..1) to -10..10 scale
-      function scaleToNum(val) {
-        return Math.round(val * 20 - 10);
-      }
-
-      // build embed using analysis output
-      const embed = {
+  return {
+    embeds: [
+      {
         title: analysis.title,
         description: analysis.description,
         color: embedColor,
@@ -183,53 +167,9 @@ function handleTuneDifferentialCommand(interaction, env, ctx) {
         ],
         footer: { text: 'Key: Grip -10 / 10 Drift' },
         timestamp: new Date().toISOString(),
-      };
-
-      // send the embed via webhook patch/post as before
-      const appId = env.DISCORD_APPLICATION_ID || interaction.application_id || data.application_id;
-      if (!appId) {
-        console.error('Missing Discord application id (env.DISCORD_APPLICATION_ID or interaction.application_id). Cannot send follow-up.');
-        return;
-      }
-
-      const webhookBase = `https://discord.com/api/v10/webhooks/${appId}/${token}`;
-      const payload = { embeds: [embed] };
-
-      // Try updating the original deferred response first
-      const patchUrl = `${webhookBase}/messages/@original`;
-      let response = await fetch(patchUrl, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ embeds: payload.embeds }),
-      });
-
-      if (!response.ok) {
-        const text = await response.text().catch(() => '<no body>');
-        console.error(`PATCH original failed: ${response.status} ${response.statusText}`, text);
-        response = await fetch(webhookBase, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload),
-        });
-        if (!response.ok) {
-          const fallbackText = await response.text().catch(() => '<no body>');
-          console.error(`Fallback POST failed: ${response.status} ${response.statusText}`, fallbackText);
-        }
-      }
-    } catch (error) {
-      console.error('Error sending follow-up:', error);
-    }
-  })();
-
-  // Tell Cloudflare to wait for the follow-up promise before shutting down
-  if (ctx && ctx.waitUntil) {
-    ctx.waitUntil(followUpPromise);
-  }
-
-  // Return deferred response immediately
-  return new JsonResponse({
-    type: InteractionResponseType.DEFERRED_CHANNEL_MESSAGE_WITH_SOURCE,
-  });
+      },
+    ],
+  };
 }
 
 // ──────────────────────────────────────────────────────────────
@@ -249,29 +189,23 @@ function handleTuneTransmissionCommand(interaction) {
 
   // Validate that both track and car were found
   if (!trackData) {
-    return new JsonResponse({
-      type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
-      data: {
-        embeds: [{
-          title: 'Invalid Track',
-          description: `Track "${trackValue}" not found in transmission tuning database.`,
-          color: 0xff0000,
-        }],
-      },
-    });
+    return {
+      embeds: [{
+        title: 'Invalid Track',
+        description: `Track "${trackValue}" not found in transmission tuning database.`,
+        color: 0xff0000,
+      }],
+    };
   }
 
   if (!carData) {
-    return new JsonResponse({
-      type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
-      data: {
-        embeds: [{
-          title: 'Invalid Car',
-          description: `Car "${carValue}" not found in car database.`,
-          color: 0xff0000,
-        }],
-      },
-    });
+    return {
+      embeds: [{
+        title: 'Invalid Car',
+        description: `Car "${carValue}" not found in car database.`,
+        color: 0xff0000,
+      }],
+    };
   }
 
   // Find track name from TRACK_CHOICES
@@ -284,25 +218,22 @@ function handleTuneTransmissionCommand(interaction) {
     inline: true,
   }));
 
-  return new JsonResponse({
-    type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
-    data: {
-      embeds: [{
-        title: 'GT7 Transmission Tuning',
-        color: 0x1e90ff,
-        fields: [
-          { name: 'Track', value: `**${trackName}**`, inline: true },
-          { name: 'Car', value: `**${carData.name}**`, inline: true },
-          { name: 'Drivetrain', value: `**${carData.drivetrain}**`, inline: true },
-          { name: 'Final Drive', value: `\`\`\`${trackData.finalDrive.toFixed(3)}\`\`\``, inline: false },
-          { name: 'Gear Ratios', value: '\u200b', inline: false },
-          ...gearFields,
-        ],
-        footer: { text: 'Optimize for track characteristics and car setup' },
-        timestamp: new Date().toISOString(),
-      }],
-    },
-  });
+  return {
+    embeds: [{
+      title: 'GT7 Transmission Tuning',
+      color: 0x1e90ff,
+      fields: [
+        { name: 'Track', value: `**${trackName}**`, inline: true },
+        { name: 'Car', value: `**${carData.name}**`, inline: true },
+        { name: 'Drivetrain', value: `**${carData.drivetrain}**`, inline: true },
+        { name: 'Final Drive', value: `\`\`\`${trackData.finalDrive.toFixed(3)}\`\`\``, inline: false },
+        { name: 'Gear Ratios', value: '\u200b', inline: false },
+        ...gearFields,
+      ],
+      footer: { text: 'Optimize for track characteristics and car setup' },
+      timestamp: new Date().toISOString(),
+    }],
+  };
 }
 
 // ──────────────────────────────────────────────────────────────
@@ -352,17 +283,77 @@ function handleRaceRestrictionsCommand(interaction) {
     description += `\n\n${notes}`;
   }
 
-  return new JsonResponse({
-    type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
-    data: {
-      embeds: [{
-        title: `Wednesday the ${ordinalDay} Restrictions :`,
-        description: description,
-        color: 0xff4500, // Orange-red color for visibility
-        timestamp: new Date().toISOString(),
-      }],
+  return {
+    embeds: [{
+      title: `Wednesday the ${ordinalDay} Restrictions :`,
+      description: description,
+      color: 0xff4500,
+      timestamp: new Date().toISOString(),
+    }],
+  };
+}
+
+async function sendDirectMessage(interaction, env, messagePayload) {
+  const token = env.DISCORD_TOKEN;
+  const userId = interaction?.member?.user?.id || interaction?.user?.id;
+
+  if (!token || !userId) {
+    return false;
+  }
+
+  const dmChannelResponse = await fetch('https://discord.com/api/v10/users/@me/channels', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bot ${token}`,
     },
+    body: JSON.stringify({ recipient_id: userId }),
   });
+
+  if (!dmChannelResponse.ok) {
+    const errorText = await dmChannelResponse.text().catch(() => '<no body>');
+    console.error(`Failed to open DM channel: ${dmChannelResponse.status} ${dmChannelResponse.statusText}`, errorText);
+    return false;
+  }
+
+  const dmChannel = await dmChannelResponse.json();
+  const dmMessageResponse = await fetch(`https://discord.com/api/v10/channels/${dmChannel.id}/messages`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bot ${token}`,
+    },
+    body: JSON.stringify(messagePayload),
+  });
+
+  if (!dmMessageResponse.ok) {
+    const errorText = await dmMessageResponse.text().catch(() => '<no body>');
+    console.error(`Failed to send DM: ${dmMessageResponse.status} ${dmMessageResponse.statusText}`, errorText);
+    return false;
+  }
+
+  return true;
+}
+
+async function updateOriginalInteractionMessage(interaction, env, message) {
+  const appId = env.DISCORD_APPLICATION_ID || interaction.application_id;
+  const token = interaction.token;
+
+  if (!appId || !token) {
+    console.error('Missing application id or interaction token; cannot update original interaction message.');
+    return;
+  }
+
+  const response = await fetch(`https://discord.com/api/v10/webhooks/${appId}/${token}/messages/@original`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ content: message }),
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text().catch(() => '<no body>');
+    console.error(`Failed to update original interaction message: ${response.status} ${response.statusText}`, errorText);
+  }
 }
 
 // ──────────────────────────────────────────────────────────────
@@ -465,32 +456,66 @@ router.post('/', async (request, env, ctx) => {
 
   // Handle APPLICATION_COMMAND interaction (user typed a slash command)
   if (interaction.type === InteractionType.APPLICATION_COMMAND) {
+    let messagePayload;
+
     // Route command to appropriate handler based on command name
     switch (interaction.data.name.toLowerCase()) {
       case TUNEDOWNFORCE_COMMAND.name.toLowerCase(): {
-        // User invoked /tune-downforce
-        return handleTuneDownforceCommand(interaction);
+        messagePayload = handleTuneDownforceCommand(interaction);
+        break;
       }
 
       case TUNECAMBERTHRUST_COMMAND.name.toLowerCase(): {
-        return handleTuneCamberThrustCommand(interaction);
+        messagePayload = handleTuneCamberThrustCommand(interaction);
+        break;
       }
 
       case TUNETRANSMISSION_COMMAND.name.toLowerCase(): {
-        return handleTuneTransmissionCommand(interaction);
+        messagePayload = handleTuneTransmissionCommand(interaction);
+        break;
       }
 
       case TUNEDIFFERENTIAL_COMMAND.name.toLowerCase(): {
-        return handleTuneDifferentialCommand(interaction, env, ctx);
+        messagePayload = handleTuneDifferentialCommand(interaction);
+        break;
       }
 
       case RACERESTRICTIONS_COMMAND.name.toLowerCase(): {
-        return handleRaceRestrictionsCommand(interaction);
+        messagePayload = handleRaceRestrictionsCommand(interaction);
+        break;
       }
 
       default:
         return new JsonResponse({ error: 'Unknown Type' }, { status: 400 });
     }
+
+    const sendPromise = (async () => {
+      const sent = await sendDirectMessage(interaction, env, messagePayload).catch((error) => {
+        console.error('Error sending direct message:', error);
+        return false;
+      });
+
+      if (sent) {
+        await updateOriginalInteractionMessage(interaction, env, '📬 Sent! Check your DMs for your command result.');
+      } else {
+        await updateOriginalInteractionMessage(
+          interaction,
+          env,
+          '⚠️ I could not send you a DM. Please enable Direct Messages from server members and try again.',
+        );
+      }
+    })();
+
+    if (ctx?.waitUntil) {
+      ctx.waitUntil(sendPromise);
+    }
+
+    return new JsonResponse({
+      type: InteractionResponseType.DEFERRED_CHANNEL_MESSAGE_WITH_SOURCE,
+      data: {
+        flags: InteractionResponseFlags.EPHEMERAL,
+      },
+    });
   }
 
   // Log error if interaction type is not recognized (type 1 = PING, type 2 = APPLICATION_COMMAND)
