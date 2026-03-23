@@ -392,6 +392,24 @@ async function sendAdminMessage(interaction, env, message) {
   return true;
 }
 
+async function deleteOriginalInteractionMessage(interaction, env) {
+  const appId = env.DISCORD_APPLICATION_ID || interaction.application_id;
+  const interactionToken = interaction.token;
+
+  if (!appId || !interactionToken) {
+    return;
+  }
+
+  const response = await fetch(`https://discord.com/api/v10/webhooks/${appId}/${interactionToken}/messages/@original`, {
+    method: 'DELETE',
+  });
+
+  if (!response.ok && response.status !== 404) {
+    const errorText = await response.text().catch(() => '<no body>');
+    console.error(`Failed to delete original interaction message: ${response.status} ${response.statusText}`, errorText);
+  }
+}
+
 // ──────────────────────────────────────────────────────────────
 // AUTOCOMPLETE INTERACTION HANDLER
 // ──────────────────────────────────────────────────────────────
@@ -532,6 +550,8 @@ router.post('/', async (request, env, ctx) => {
           `⚠️ Failed to DM ${username} for /${slashCommandName}.`,
         );
       }
+
+      await deleteOriginalInteractionMessage(interaction, env);
     })();
 
     if (ctx?.waitUntil) {
@@ -539,9 +559,8 @@ router.post('/', async (request, env, ctx) => {
     }
 
     return new JsonResponse({
-      type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
+      type: InteractionResponseType.DEFERRED_CHANNEL_MESSAGE_WITH_SOURCE,
       data: {
-        content: '✅',
         flags: InteractionResponseFlags.EPHEMERAL,
       },
     });

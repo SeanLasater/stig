@@ -81,7 +81,7 @@ describe('Server', () => {
       const response = await server.fetch(request, env);
       const body = await response.json();
       expect(body.type).to.equal(
-        InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
+        InteractionResponseType.DEFERRED_CHANNEL_MESSAGE_WITH_SOURCE,
       );
       expect(body.data.flags).to.equal(InteractionResponseFlags.EPHEMERAL);
     });
@@ -111,7 +111,7 @@ describe('Server', () => {
       const response = await server.fetch(request, {});
       const body = await response.json();
       expect(body.type).to.equal(
-        InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
+        InteractionResponseType.DEFERRED_CHANNEL_MESSAGE_WITH_SOURCE,
       );
       expect(body.data.flags).to.equal(InteractionResponseFlags.EPHEMERAL);
     });
@@ -144,7 +144,7 @@ describe('Server', () => {
       const response = await server.fetch(request, env, {});
       const body = await response.json();
       expect(body.type).to.equal(
-        InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
+        InteractionResponseType.DEFERRED_CHANNEL_MESSAGE_WITH_SOURCE,
       );
       expect(body.data.flags).to.equal(InteractionResponseFlags.EPHEMERAL);
     });
