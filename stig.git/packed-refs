@@ -1,0 +1,11 @@
+# pack-refs with: peeled fully-peeled sorted 
+94e8e19332d7cb64dd8ab7c3d32e26c1dce48204 refs/heads/Co-Pilot-Build
+ed63a8fbc5d35cf5c189fa8b3116b2c62b4da47f refs/heads/dependabot/npm_and_yarn/c8-11.0.0
+7673ff5db20a043b98a2affae519b817f9d20b37 refs/heads/dependabot/npm_and_yarn/eslint-10.0.2
+006f0e5504be280da8ac1a1244d57baec2c8cf77 refs/heads/dependabot/npm_and_yarn/eslint/js-10.0.1
+ea75ea3f2355e9984a15c8b7cd39c4d2faf0f329 refs/heads/dependabot/npm_and_yarn/flatted-3.4.2
+f8f434c8737ac39574f6e89478689ab34ec4b17b refs/heads/dependabot/npm_and_yarn/globals-17.3.0
+083c8f6d2deed0c4b119182b62527730038ad472 refs/heads/dependabot/npm_and_yarn/multi-bcbe54402a
+94e8e19332d7cb64dd8ab7c3d32e26c1dce48204 refs/heads/direct-message-bot
+94e8e19332d7cb64dd8ab7c3d32e26c1dce48204 refs/heads/main
+7cfe796568f1a8eece7ef362727eb55c2cd5b5ce refs/heads/support
