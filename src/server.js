@@ -24,6 +24,7 @@ import {
   CONTACTSUPPORT_COMMAND,
   WRITEAREVIEW_COMMAND,
   FEATUREREQUEST_COMMAND,
+  HOSTARACE_COMMAND,
 } from './commands.js';
 
 import { DAMAGE_CHOICES } from './damageData.js';
@@ -402,10 +403,23 @@ async function findSupportChannelId(interaction, env) {
   return findChannelIdByName(interaction, env, 'support');
 }
 
+async function findHostARaceChannelId(interaction, env) {
+  const configuredId = normalizeChannelId(env.DISCORD_HOST_A_RACE_CHANNEL_ID);
+  if (configuredId) {
+    return configuredId;
+  }
+
+  return findChannelIdByName(interaction, env, 'host-a-race');
+}
+
 async function postMessageToChannel(channelId, token, message) {
   if (!channelId || !token) {
     return { ok: false, error: 'Missing channel id or token.' };
   }
+
+  const payload = typeof message === 'string'
+    ? { content: message }
+    : message;
 
   const response = await fetch(`https://discord.com/api/v10/channels/${channelId}/messages`, {
     method: 'POST',
@@ -413,7 +427,7 @@ async function postMessageToChannel(channelId, token, message) {
       'Content-Type': 'application/json',
       Authorization: `Bot ${token}`,
     },
-    body: JSON.stringify({ content: message }),
+    body: JSON.stringify(payload),
   });
 
   if (!response.ok) {
@@ -524,6 +538,69 @@ async function processSupportIntake(interaction, env, commandName, requestKind) 
   });
 }
 
+function buildHostRacePost(interaction) {
+  const options = Object.fromEntries((interaction?.data?.options ?? []).map(opt => [opt.name, opt.value]));
+  const tyreChoice = TIRE_CHOICES.find(t => t.value === options.tyre);
+  const tyreValue = tyreChoice ? tyreChoice.name : options.tyre;
+  const damageChoice = DAMAGE_CHOICES.find(d => d.value === options.damage);
+  const damageValue = damageChoice ? damageChoice.name : options.damage;
+
+  const details = [
+    { name: 'Type', value: options.type, inline: true },
+    { name: 'Track', value: options.track, inline: true },
+    { name: 'Time (PST)', value: options.time_pst, inline: true },
+  ];
+
+  if (options.psn_name) details.push({ name: 'PSN Name', value: options.psn_name, inline: true });
+  if (options.class) details.push({ name: 'Class', value: options.class, inline: true });
+  if (tyreValue) details.push({ name: 'Tyre', value: tyreValue, inline: true });
+  if (damageValue) details.push({ name: 'Damage', value: damageValue, inline: true });
+  if (options.prohibited) details.push({ name: 'Prohibited', value: options.prohibited, inline: false });
+  if (options.notes) details.push({ name: 'Notes', value: options.notes, inline: false });
+
+  return {
+    content: '🏁 New lobby is up in #host-a-race!',
+    embeds: [
+      {
+        title: `🎮 ${options.lobby_title}`,
+        color: 0x00b894,
+        description: 'Jump in and race! Please react in channel if you are joining.',
+        fields: details,
+        footer: { text: 'Hosted with /host-a-race' },
+        timestamp: new Date().toISOString(),
+      },
+    ],
+  };
+}
+
+async function processHostRaceCommand(interaction, env) {
+  const username = getInteractionUsername(interaction);
+  const token = env.DISCORD_TOKEN;
+  const hostRaceChannelId = await findHostARaceChannelId(interaction, env);
+  const invokedChannelId = normalizeChannelId(interaction?.channel_id);
+
+  if (!hostRaceChannelId || !invokedChannelId || hostRaceChannelId !== invokedChannelId) {
+    await sendDirectMessage(interaction, env, {
+      content: 'Please use /host-a-race in #host-a-race so the lobby post goes to the correct channel.',
+    });
+    await sendAdminMessage(interaction, env, `⚠️ ${username} tried /${HOSTARACE_COMMAND.name} outside #host-a-race.`);
+    return;
+  }
+
+  const postContent = buildHostRacePost(interaction);
+  const posted = await postMessageToChannel(hostRaceChannelId, token, postContent);
+
+  if (posted.ok) {
+    await sendAdminMessage(interaction, env, `${username} posted /${HOSTARACE_COMMAND.name} in #host-a-race.`);
+    return;
+  }
+
+  await sendAdminMessage(interaction, env, `⚠️ Failed to post /${HOSTARACE_COMMAND.name} for ${username}: ${posted.error}`);
+  await sendDirectMessage(interaction, env, {
+    content: 'I could not post your race lobby to #host-a-race right now. Please try again shortly.',
+  });
+}
+
 // ──────────────────────────────────────────────────────────────
 // AUTOCOMPLETE INTERACTION HANDLER
 // ──────────────────────────────────────────────────────────────
@@ -568,6 +645,40 @@ function handleAutocomplete(interaction) {
         choices: filtered.map(car => ({
           name: car.name,
           value: car.value,
+        })),
+      },
+    });
+  }
+
+  if (focusedOption.name === 'tyre') {
+    const focusedValue = String(focusedOption.value || '').toLowerCase();
+    const filtered = TIRE_CHOICES
+      .filter(tyre => tyre.name.toLowerCase().includes(focusedValue))
+      .slice(0, 25);
+
+    return new JsonResponse({
+      type: InteractionResponseType.APPLICATION_COMMAND_AUTOCOMPLETE_RESULT,
+      data: {
+        choices: filtered.map(tyre => ({
+          name: tyre.name,
+          value: tyre.value,
+        })),
+      },
+    });
+  }
+
+  if (focusedOption.name === 'damage') {
+    const focusedValue = String(focusedOption.value || '').toLowerCase();
+    const filtered = DAMAGE_CHOICES
+      .filter(damage => damage.name.toLowerCase().includes(focusedValue))
+      .slice(0, 25);
+
+    return new JsonResponse({
+      type: InteractionResponseType.APPLICATION_COMMAND_AUTOCOMPLETE_RESULT,
+      data: {
+        choices: filtered.map(damage => ({
+          name: damage.name,
+          value: damage.value,
         })),
       },
     });
@@ -663,12 +774,26 @@ router.post('/', async (request, env, ctx) => {
         break;
       }
 
+      case HOSTARACE_COMMAND.name.toLowerCase(): {
+        supportIntakeCommand = {
+          commandName: HOSTARACE_COMMAND.name,
+          requestKind: 'Host A Race',
+        };
+        break;
+      }
+
       default:
         return new JsonResponse({ error: 'Unknown Type' }, { status: 400 });
     }
 
     const sendPromise = (async () => {
       if (supportIntakeCommand) {
+        if (supportIntakeCommand.commandName === HOSTARACE_COMMAND.name) {
+          await processHostRaceCommand(interaction, env);
+          await deleteOriginalInteractionMessage(interaction, env);
+          return;
+        }
+
         await processSupportIntake(
           interaction,
           env,

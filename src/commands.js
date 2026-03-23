@@ -197,3 +197,78 @@ export const FEATUREREQUEST_COMMAND = {
     },
   ],
 };
+
+export const HOSTARACE_COMMAND = {
+  name: 'host-a-race',
+  description: 'Create a race lobby post in #host-a-race.',
+  options: [
+    {
+      name: 'lobby_title',
+      description: 'Lobby title',
+      type: 3,
+      required: true,
+    },
+    {
+      name: 'type',
+      description: 'Event type',
+      type: 3,
+      required: true,
+      choices: [
+        { name: 'Race', value: 'Race' },
+        { name: 'Funzies', value: 'Funzies' },
+        { name: 'Drift', value: 'Drift' },
+      ],
+    },
+    {
+      name: 'track',
+      description: 'Track name',
+      type: 3,
+      required: true,
+      autocomplete: true,
+    },
+    {
+      name: 'time_pst',
+      description: 'Start time in PST',
+      type: 3,
+      required: true,
+    },
+    {
+      name: 'psn_name',
+      description: 'PSN name',
+      type: 3,
+      required: false,
+    },
+    {
+      name: 'class',
+      description: 'Class',
+      type: 3,
+      required: false,
+    },
+    {
+      name: 'tyre',
+      description: 'Tyre',
+      type: 3,
+      required: false,
+      autocomplete: true,
+    },
+    {
+      name: 'damage',
+      description: 'Damage setting',
+      type: 3,
+      required: false,
+      autocomplete: true,
+    },
+    {
+      name: 'prohibited',
+      description: 'Prohibited items',
+      type: 3,
+      required: false,
+    },
+    {
+      name: 'notes',
+      description: 'Additional notes',
+      type: 3,
+      required: false,
+    },
+  ],
+};
