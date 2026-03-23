@@ -21,6 +21,9 @@ import {
   TUNETRANSMISSION_COMMAND, 
   TUNEDIFFERENTIAL_COMMAND,
   RACERESTRICTIONS_COMMAND,
+  CONTACTSUPPORT_COMMAND,
+  WRITEAREVIEW_COMMAND,
+  FEATUREREQUEST_COMMAND,
 } from './commands.js';
 
 import { DAMAGE_CHOICES } from './damageData.js';
@@ -335,14 +338,24 @@ async function sendDirectMessage(interaction, env, messagePayload) {
   return true;
 }
 
-async function findAdminChannelId(interaction, env) {
-  const token = env.DISCORD_TOKEN;
-  const configuredId = env.DISCORD_ADMIN_CHANNEL_ID;
-  if (configuredId) {
-    return configuredId;
-  }
+function getInteractionUsername(interaction) {
+  return interaction?.member?.user?.global_name
+    || interaction?.member?.user?.username
+    || interaction?.user?.global_name
+    || interaction?.user?.username
+    || 'Unknown user';
+}
 
+function getOptionValue(interaction, optionName) {
+  const options = interaction?.data?.options || [];
+  const found = options.find(option => option.name === optionName);
+  return found?.value;
+}
+
+async function findChannelIdByName(interaction, env, targetName) {
+  const token = env.DISCORD_TOKEN;
   const guildId = interaction.guild_id;
+
   if (!token || !guildId) {
     return null;
   }
@@ -361,8 +374,26 @@ async function findAdminChannelId(interaction, env) {
   }
 
   const channels = await response.json();
-  const adminChannel = channels.find(channel => channel?.name?.toLowerCase() === 'admin' && channel?.type === 0);
-  return adminChannel?.id || null;
+  const targetChannel = channels.find(channel => channel?.name?.toLowerCase() === targetName.toLowerCase() && channel?.type === 0);
+  return targetChannel?.id || null;
+}
+
+async function findAdminChannelId(interaction, env) {
+  const configuredId = env.DISCORD_ADMIN_CHANNEL_ID;
+  if (configuredId) {
+    return configuredId;
+  }
+
+  return findChannelIdByName(interaction, env, 'admin');
+}
+
+async function findSupportChannelId(interaction, env) {
+  const configuredId = env.DISCORD_SUPPORT_CHANNEL_ID;
+  if (configuredId) {
+    return configuredId;
+  }
+
+  return findChannelIdByName(interaction, env, 'support');
 }
 
 async function sendAdminMessage(interaction, env, message) {
@@ -408,6 +439,55 @@ async function deleteOriginalInteractionMessage(interaction, env) {
     const errorText = await response.text().catch(() => '<no body>');
     console.error(`Failed to delete original interaction message: ${response.status} ${response.statusText}`, errorText);
   }
+}
+
+function buildSupportForwardMessage(interaction, commandName, messageBody, requestKind) {
+  const username = getInteractionUsername(interaction);
+  const userId = interaction?.member?.user?.id || interaction?.user?.id || 'unknown-user-id';
+  const sanitizedMessage = String(messageBody || '').trim();
+
+  return [
+    `📨 ${requestKind}`,
+    `User: ${username} (${userId})`,
+    `Command: /${commandName}`,
+    'Message:',
+    sanitizedMessage,
+  ].join('\n');
+}
+
+async function processSupportIntake(interaction, env, commandName, requestKind) {
+  const username = getInteractionUsername(interaction);
+  const supportChannelId = await findSupportChannelId(interaction, env);
+  const invokedChannelId = interaction?.channel_id;
+
+  if (!supportChannelId || !invokedChannelId || supportChannelId !== invokedChannelId) {
+    await sendDirectMessage(interaction, env, {
+      content: 'Please use this command in #support so your message gets routed correctly.',
+    });
+    await sendAdminMessage(interaction, env, `⚠️ ${username} tried /${commandName} outside #support.`);
+    return;
+  }
+
+  const messageBody = getOptionValue(interaction, 'message');
+  const adminMessage = buildSupportForwardMessage(interaction, commandName, messageBody, requestKind);
+  const sentToAdmin = await sendAdminMessage(interaction, env, adminMessage);
+
+  if (sentToAdmin) {
+    const confirmation = [
+      `Thanks for the ${requestKind.toLowerCase()}!`,
+      'Your message was sent to #admin.',
+      'We are a one-man operation working hard to deliver great functionality at the lowest price possible, and we truly appreciate your support.',
+    ].join(' ');
+    const dmSent = await sendDirectMessage(interaction, env, { content: confirmation });
+    if (!dmSent) {
+      await sendAdminMessage(interaction, env, `⚠️ Failed to send confirmation DM to ${username} for /${commandName}.`);
+    }
+    return;
+  }
+
+  await sendDirectMessage(interaction, env, {
+    content: 'Thanks for reaching out. I could not forward your message to #admin right now, please try again shortly.',
+  });
 }
 
 // ──────────────────────────────────────────────────────────────
@@ -497,6 +577,7 @@ router.post('/', async (request, env, ctx) => {
 
   if (interaction.type === InteractionType.APPLICATION_COMMAND) {
     let messagePayload;
+    let supportIntakeCommand = null;
 
     switch (interaction.data.name.toLowerCase()) {
       case TUNEDOWNFORCE_COMMAND.name.toLowerCase(): {
@@ -524,21 +605,52 @@ router.post('/', async (request, env, ctx) => {
         break;
       }
 
+      case CONTACTSUPPORT_COMMAND.name.toLowerCase(): {
+        supportIntakeCommand = {
+          commandName: CONTACTSUPPORT_COMMAND.name,
+          requestKind: 'Support Request',
+        };
+        break;
+      }
+
+      case WRITEAREVIEW_COMMAND.name.toLowerCase(): {
+        supportIntakeCommand = {
+          commandName: WRITEAREVIEW_COMMAND.name,
+          requestKind: 'Review',
+        };
+        break;
+      }
+
+      case FEATUREREQUEST_COMMAND.name.toLowerCase(): {
+        supportIntakeCommand = {
+          commandName: FEATUREREQUEST_COMMAND.name,
+          requestKind: 'Feature Request',
+        };
+        break;
+      }
+
       default:
         return new JsonResponse({ error: 'Unknown Type' }, { status: 400 });
     }
 
     const sendPromise = (async () => {
+      if (supportIntakeCommand) {
+        await processSupportIntake(
+          interaction,
+          env,
+          supportIntakeCommand.commandName,
+          supportIntakeCommand.requestKind,
+        );
+        await deleteOriginalInteractionMessage(interaction, env);
+        return;
+      }
+
       const sent = await sendDirectMessage(interaction, env, messagePayload).catch((error) => {
         console.error('Error sending direct message:', error);
         return false;
       });
 
-      const username = interaction?.member?.user?.global_name
-        || interaction?.member?.user?.username
-        || interaction?.user?.global_name
-        || interaction?.user?.username
-        || 'Unknown user';
+      const username = getInteractionUsername(interaction);
       const slashCommandName = interaction?.data?.name || 'unknown-command';
 
       await sendAdminMessage(interaction, env, `${username} ran /${slashCommandName}`);

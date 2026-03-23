@@ -5,7 +5,14 @@ import {
   InteractionType,
   InteractionResponseFlags,
 } from 'discord-interactions';
-import { TUNEDOWNFORCE_COMMAND, TUNECAMBERTHRUST_COMMAND, TUNEDIFFERENTIAL_COMMAND } from '../src/commands.js';
+import {
+  TUNEDOWNFORCE_COMMAND,
+  TUNECAMBERTHRUST_COMMAND,
+  TUNEDIFFERENTIAL_COMMAND,
+  CONTACTSUPPORT_COMMAND,
+  WRITEAREVIEW_COMMAND,
+  FEATUREREQUEST_COMMAND,
+} from '../src/commands.js';
 import sinon from 'sinon';
 import server from '../src/server.js';
 
@@ -171,6 +178,93 @@ describe('Server', () => {
       const body = await response.json();
       expect(response.status).to.equal(400);
       expect(body.error).to.equal('Unknown Type');
+    });
+
+    it('should handle a CONTACTSUPPORT command interaction', async () => {
+      const interaction = {
+        type: InteractionType.APPLICATION_COMMAND,
+        data: {
+          name: CONTACTSUPPORT_COMMAND.name,
+          options: [
+            { name: 'message', value: 'Need help with setup' },
+          ],
+        },
+      };
+
+      const request = {
+        method: 'POST',
+        url: new URL('/', 'http://discordo.example'),
+      };
+
+      verifyDiscordRequestStub.resolves({
+        isValid: true,
+        interaction: interaction,
+      });
+
+      const response = await server.fetch(request, {});
+      const body = await response.json();
+      expect(body.type).to.equal(
+        InteractionResponseType.DEFERRED_CHANNEL_MESSAGE_WITH_SOURCE,
+      );
+      expect(body.data.flags).to.equal(InteractionResponseFlags.EPHEMERAL);
+    });
+
+    it('should handle a WRITEAREVIEW command interaction', async () => {
+      const interaction = {
+        type: InteractionType.APPLICATION_COMMAND,
+        data: {
+          name: WRITEAREVIEW_COMMAND.name,
+          options: [
+            { name: 'message', value: 'Great command set, really useful' },
+          ],
+        },
+      };
+
+      const request = {
+        method: 'POST',
+        url: new URL('/', 'http://discordo.example'),
+      };
+
+      verifyDiscordRequestStub.resolves({
+        isValid: true,
+        interaction: interaction,
+      });
+
+      const response = await server.fetch(request, {});
+      const body = await response.json();
+      expect(body.type).to.equal(
+        InteractionResponseType.DEFERRED_CHANNEL_MESSAGE_WITH_SOURCE,
+      );
+      expect(body.data.flags).to.equal(InteractionResponseFlags.EPHEMERAL);
+    });
+
+    it('should handle a FEATUREREQUEST command interaction', async () => {
+      const interaction = {
+        type: InteractionType.APPLICATION_COMMAND,
+        data: {
+          name: FEATUREREQUEST_COMMAND.name,
+          options: [
+            { name: 'message', value: 'Please add setup presets' },
+          ],
+        },
+      };
+
+      const request = {
+        method: 'POST',
+        url: new URL('/', 'http://discordo.example'),
+      };
+
+      verifyDiscordRequestStub.resolves({
+        isValid: true,
+        interaction: interaction,
+      });
+
+      const response = await server.fetch(request, {});
+      const body = await response.json();
+      expect(body.type).to.equal(
+        InteractionResponseType.DEFERRED_CHANNEL_MESSAGE_WITH_SOURCE,
+      );
+      expect(body.data.flags).to.equal(InteractionResponseFlags.EPHEMERAL);
     });
   });
 
