@@ -559,12 +559,12 @@ function buildHostRacePost(interaction) {
   if (options.notes) details.push({ name: 'Notes', value: options.notes, inline: false });
 
   return {
-    content: '🏁 New lobby is up in #host-a-race!',
+    content: '🏁 New lobby is up!',
     embeds: [
       {
         title: `🎮 ${options.lobby_title}`,
         color: 0x00b894,
-        description: 'Jump in and race! Please react in channel if you are joining.',
+        description: 'React to this post to let us know you are joining!',
         fields: details,
         footer: { text: 'Hosted with /host-a-race' },
         timestamp: new Date().toISOString(),
