@@ -335,25 +335,61 @@ async function sendDirectMessage(interaction, env, messagePayload) {
   return true;
 }
 
-async function updateOriginalInteractionMessage(interaction, env, message) {
-  const appId = env.DISCORD_APPLICATION_ID || interaction.application_id;
-  const token = interaction.token;
-
-  if (!appId || !token) {
-    console.error('Missing application id or interaction token; cannot update original interaction message.');
-    return;
+async function findAdminChannelId(interaction, env) {
+  const token = env.DISCORD_TOKEN;
+  const configuredId = env.DISCORD_ADMIN_CHANNEL_ID;
+  if (configuredId) {
+    return configuredId;
   }
 
-  const response = await fetch(`https://discord.com/api/v10/webhooks/${appId}/${token}/messages/@original`, {
-    method: 'PATCH',
-    headers: { 'Content-Type': 'application/json' },
+  const guildId = interaction.guild_id;
+  if (!token || !guildId) {
+    return null;
+  }
+
+  const response = await fetch(`https://discord.com/api/v10/guilds/${guildId}/channels`, {
+    method: 'GET',
+    headers: {
+      Authorization: `Bot ${token}`,
+    },
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text().catch(() => '<no body>');
+    console.error(`Failed to fetch guild channels: ${response.status} ${response.statusText}`, errorText);
+    return null;
+  }
+
+  const channels = await response.json();
+  const adminChannel = channels.find(channel => channel?.name?.toLowerCase() === 'admin' && channel?.type === 0);
+  return adminChannel?.id || null;
+}
+
+async function sendAdminMessage(interaction, env, message) {
+  const token = env.DISCORD_TOKEN;
+  const channelId = await findAdminChannelId(interaction, env);
+
+  if (!token || !channelId) {
+    console.error('Missing bot token or #admin channel id; cannot send admin message.');
+    return false;
+  }
+
+  const response = await fetch(`https://discord.com/api/v10/channels/${channelId}/messages`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bot ${token}`,
+    },
     body: JSON.stringify({ content: message }),
   });
 
   if (!response.ok) {
     const errorText = await response.text().catch(() => '<no body>');
-    console.error(`Failed to update original interaction message: ${response.status} ${response.statusText}`, errorText);
+    console.error(`Failed to send admin message: ${response.status} ${response.statusText}`, errorText);
+    return false;
   }
+
+  return true;
 }
 
 // ──────────────────────────────────────────────────────────────
@@ -363,7 +399,7 @@ async function updateOriginalInteractionMessage(interaction, env, message) {
 function handleAutocomplete(interaction) {
   const { data } = interaction;
   const focusedOption = data.options?.find(opt => opt.focused);
-  
+
   if (!focusedOption) {
     return new JsonResponse({
       type: InteractionResponseType.APPLICATION_COMMAND_AUTOCOMPLETE_RESULT,
@@ -371,14 +407,11 @@ function handleAutocomplete(interaction) {
     });
   }
 
-  // Handle autocomplete for track selection in tune-transmission command
   if (focusedOption.name === 'track') {
     const focusedValue = focusedOption.value.toLowerCase();
-    
-    // Filter tracks based on user input
     const filtered = TRACK_CHOICES
       .filter(track => track.name.toLowerCase().includes(focusedValue))
-      .slice(0, 25); // Discord limit: max 25 choices shown at a time
+      .slice(0, 25);
 
     return new JsonResponse({
       type: InteractionResponseType.APPLICATION_COMMAND_AUTOCOMPLETE_RESULT,
@@ -391,14 +424,11 @@ function handleAutocomplete(interaction) {
     });
   }
 
-  // Handle autocomplete for car selection in tune-transmission command
   if (focusedOption.name === 'car') {
     const focusedValue = focusedOption.value.toLowerCase();
-    
-    // Filter cars based on user input
     const filtered = CARS
       .filter(car => car.name.toLowerCase().includes(focusedValue))
-      .slice(0, 25); // Discord limit: max 25 choices shown at a time
+      .slice(0, 25);
 
     return new JsonResponse({
       type: InteractionResponseType.APPLICATION_COMMAND_AUTOCOMPLETE_RESULT,
@@ -411,54 +441,45 @@ function handleAutocomplete(interaction) {
     });
   }
 
-  // No matching autocomplete handler
   return new JsonResponse({
     type: InteractionResponseType.APPLICATION_COMMAND_AUTOCOMPLETE_RESULT,
     data: { choices: [] },
   });
 }
+
 // ──────────────────────────────────────────────────────────────
 // ROUTER AND SERVER SETUP
 // ──────────────────────────────────────────────────────────────
 
-// Create router to handle HTTP requests; directs GET/POST to appropriate handlers
 const router = AutoRouter();
 
-// GET / route — health check endpoint; returns Discord Application ID to confirm worker is running
 router.get('/', (request, env) => {
   return new Response(`👋 ${env.DISCORD_APPLICATION_ID}`);
 });
 
-// POST / route — main handler for all Discord interactions (ping, slash commands, etc.)
 router.post('/', async (request, env, ctx) => {
-  // Verify request signature with Discord's public key (prevents unauthorized requests)
   const { isValid, interaction } = await server.verifyDiscordRequest(
     request,
     env,
   );
-  // Reject request if signature verification failed or interaction object is missing
+
   if (!isValid || !interaction) {
     return new Response('Bad request signature.', { status: 401 });
   }
 
-  // Handle PING interaction (Discord validates webhook URL during setup)
   if (interaction.type === InteractionType.PING) {
-    // Return PONG to confirm webhook is responding correctly
     return new JsonResponse({
       type: InteractionResponseType.PONG,
     });
   }
 
-  // Handle APPLICATION_COMMAND_AUTOCOMPLETE interaction (user typing in autocomplete field)
   if (interaction.type === InteractionType.APPLICATION_COMMAND_AUTOCOMPLETE) {
     return handleAutocomplete(interaction);
   }
 
-  // Handle APPLICATION_COMMAND interaction (user typed a slash command)
   if (interaction.type === InteractionType.APPLICATION_COMMAND) {
     let messagePayload;
 
-    // Route command to appropriate handler based on command name
     switch (interaction.data.name.toLowerCase()) {
       case TUNEDOWNFORCE_COMMAND.name.toLowerCase(): {
         messagePayload = handleTuneDownforceCommand(interaction);
@@ -495,13 +516,20 @@ router.post('/', async (request, env, ctx) => {
         return false;
       });
 
-      if (sent) {
-        await updateOriginalInteractionMessage(interaction, env, '📬 Sent! Check your DMs for your command result.');
-      } else {
-        await updateOriginalInteractionMessage(
+      const username = interaction?.member?.user?.global_name
+        || interaction?.member?.user?.username
+        || interaction?.user?.global_name
+        || interaction?.user?.username
+        || 'Unknown user';
+      const slashCommandName = interaction?.data?.name || 'unknown-command';
+
+      await sendAdminMessage(interaction, env, `${username} ran /${slashCommandName}`);
+
+      if (!sent) {
+        await sendAdminMessage(
           interaction,
           env,
-          '⚠️ I could not send you a DM. Please enable Direct Messages from server members and try again.',
+          `⚠️ Failed to DM ${username} for /${slashCommandName}.`,
         );
       }
     })();
@@ -511,14 +539,14 @@ router.post('/', async (request, env, ctx) => {
     }
 
     return new JsonResponse({
-      type: InteractionResponseType.DEFERRED_CHANNEL_MESSAGE_WITH_SOURCE,
+      type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
       data: {
+        content: '✅',
         flags: InteractionResponseFlags.EPHEMERAL,
       },
     });
   }
 
-  // Log error if interaction type is not recognized (type 1 = PING, type 2 = APPLICATION_COMMAND)
   console.error('Unknown Type');
   return new JsonResponse({ error: 'Unknown Type' }, { status: 400 });
 });
