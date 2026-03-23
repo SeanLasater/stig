@@ -509,7 +509,7 @@ async function processSupportIntake(interaction, env, commandName, requestKind) 
   if (sentToAdmin) {
     const confirmation = [
       `Thanks for the ${requestKind.toLowerCase()}!`,
-      'Your message was sent to #admin.',
+      'Your message was sent! The admin team will review it as soon as possible.',
       'We are a one-man operation working hard to deliver great functionality at the lowest price possible, and we truly appreciate your support.',
     ].join(' ');
     const dmSent = await sendDirectMessage(interaction, env, { content: confirmation });
