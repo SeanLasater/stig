@@ -352,6 +352,12 @@ function getOptionValue(interaction, optionName) {
   return found?.value;
 }
 
+function normalizeChannelId(value) {
+  if (!value) return null;
+  const normalized = String(value).replace(/[^0-9]/g, '');
+  return normalized.length > 0 ? normalized : null;
+}
+
 async function findChannelIdByName(interaction, env, targetName) {
   const token = env.DISCORD_TOKEN;
   const guildId = interaction.guild_id;
@@ -379,7 +385,7 @@ async function findChannelIdByName(interaction, env, targetName) {
 }
 
 async function findAdminChannelId(interaction, env) {
-  const configuredId = env.DISCORD_ADMIN_CHANNEL_ID;
+  const configuredId = normalizeChannelId(env.DISCORD_ADMIN_CHANNEL_ID);
   if (configuredId) {
     return configuredId;
   }
@@ -388,7 +394,7 @@ async function findAdminChannelId(interaction, env) {
 }
 
 async function findSupportChannelId(interaction, env) {
-  const configuredId = env.DISCORD_SUPPORT_CHANNEL_ID;
+  const configuredId = normalizeChannelId(env.DISCORD_SUPPORT_CHANNEL_ID);
   if (configuredId) {
     return configuredId;
   }
@@ -396,13 +402,9 @@ async function findSupportChannelId(interaction, env) {
   return findChannelIdByName(interaction, env, 'support');
 }
 
-async function sendAdminMessage(interaction, env, message) {
-  const token = env.DISCORD_TOKEN;
-  const channelId = await findAdminChannelId(interaction, env);
-
-  if (!token || !channelId) {
-    console.error('Missing bot token or #admin channel id; cannot send admin message.');
-    return false;
+async function postMessageToChannel(channelId, token, message) {
+  if (!channelId || !token) {
+    return { ok: false, error: 'Missing channel id or token.' };
   }
 
   const response = await fetch(`https://discord.com/api/v10/channels/${channelId}/messages`, {
@@ -416,7 +418,39 @@ async function sendAdminMessage(interaction, env, message) {
 
   if (!response.ok) {
     const errorText = await response.text().catch(() => '<no body>');
-    console.error(`Failed to send admin message: ${response.status} ${response.statusText}`, errorText);
+    return {
+      ok: false,
+      error: `Failed to send message: ${response.status} ${response.statusText} ${errorText}`,
+    };
+  }
+
+  return { ok: true };
+}
+
+async function sendAdminMessage(interaction, env, message) {
+  const token = env.DISCORD_TOKEN;
+  const configuredChannelId = normalizeChannelId(env.DISCORD_ADMIN_CHANNEL_ID);
+  const channelId = configuredChannelId || await findAdminChannelId(interaction, env);
+
+  if (!token || !channelId) {
+    console.error('Missing bot token or #admin channel id; cannot send admin message.');
+    return false;
+  }
+
+  const primarySend = await postMessageToChannel(channelId, token, message);
+  if (primarySend.ok) {
+    return true;
+  }
+
+  const fallbackChannelId = await findChannelIdByName(interaction, env, 'admin');
+  if (!fallbackChannelId || fallbackChannelId === channelId) {
+    console.error(`Failed to send admin message: ${primarySend.error}`);
+    return false;
+  }
+
+  const fallbackSend = await postMessageToChannel(fallbackChannelId, token, message);
+  if (!fallbackSend.ok) {
+    console.error(`Failed to send admin message with configured and fallback channel ids: ${primarySend.error} | ${fallbackSend.error}`);
     return false;
   }
 
